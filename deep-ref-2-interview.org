@@ -1,7 +1,7 @@
 #+EMAIL: ivan@grishaev.me
 #+AUTHOR: Иван Гришаев
 #+TITLE: Собеседование
-#+REVEAL_ROOT: file:///Users/ivan/Downloads/reveal.js-master
+#+REVEAL_ROOT: /talks
 #+REVEAL_TRANS: none
 #+REVEAL_THEME: beige
 #+OPTIONS: reveal_slide_number:nil num:nil toc:nil

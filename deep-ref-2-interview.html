@@ -4,8 +4,8 @@
 <meta charset="utf-8"/>
 <title>Собеседование</title>
 <meta name="author" content="(Иван Гришаев)"/>
-<link rel="stylesheet" href="file:///Users/ivan/Downloads/reveal.js-master/css/reveal.css"/>
-<link rel="stylesheet" href="file:///Users/ivan/Downloads/reveal.js-master/css/theme/beige.css" id="theme"/>
+<link rel="stylesheet" href="/talks/css/reveal.css"/>
+<link rel="stylesheet" href="/talks/css/theme/beige.css" id="theme"/>
 <link rel="stylesheet" href=""/>
 <!-- If the query includes 'print-pdf', include the PDF print sheet -->
 <script>
@@ -13,7 +13,7 @@
         var link = document.createElement( 'link' );
         link.rel = 'stylesheet';
         link.type = 'text/css';
-        link.href = 'file:///Users/ivan/Downloads/reveal.js-master/css/print/pdf.css';
+        link.href = '/talks/css/print/pdf.css';
         document.getElementsByTagName( 'head' )[0].appendChild( link );
     }
 </script>
@@ -194,8 +194,8 @@
 </section>
 </div>
 </div>
-<script src="file:///Users/ivan/Downloads/reveal.js-master/lib/js/head.min.js"></script>
-<script src="file:///Users/ivan/Downloads/reveal.js-master/js/reveal.js"></script>
+<script src="/talks/lib/js/head.min.js"></script>
+<script src="/talks/js/reveal.js"></script>
 
 <script>
 // Full list of configuration options available here:
@@ -222,11 +222,11 @@ multiplex: {
 
 // Optional libraries used to extend on reveal.js
 dependencies: [
- { src: 'file:///Users/ivan/Downloads/reveal.js-master/lib/js/classList.js', condition: function() { return !document.body.classList; } },
- { src: 'file:///Users/ivan/Downloads/reveal.js-master/plugin/markdown/marked.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
- { src: 'file:///Users/ivan/Downloads/reveal.js-master/plugin/markdown/markdown.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
- { src: 'file:///Users/ivan/Downloads/reveal.js-master/plugin/zoom-js/zoom.js', async: true, condition: function() { return !!document.body.classList; } },
- { src: 'file:///Users/ivan/Downloads/reveal.js-master/plugin/notes/notes.js', async: true, condition: function() { return !!document.body.classList; } }]
+ { src: '/talks/lib/js/classList.js', condition: function() { return !document.body.classList; } },
+ { src: '/talks/plugin/markdown/marked.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
+ { src: '/talks/plugin/markdown/markdown.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
+ { src: '/talks/plugin/zoom-js/zoom.js', async: true, condition: function() { return !!document.body.classList; } },
+ { src: '/talks/plugin/notes/notes.js', async: true, condition: function() { return !!document.body.classList; } }]
 });
 </script>
 </body>
