@@ -1,0 +1,198 @@
+#+EMAIL: ivan@grishaev.me
+#+AUTHOR: Иван Гришаев
+#+TITLE: Тесты с фикстурами
+#+REVEAL_ROOT: http://grishaev.me/talks
+#+REVEAL_TRANS: none
+#+REVEAL_THEME: serif
+#+OPTIONS: reveal_slide_number:nil num:nil toc:nil
+
+* Проблема
+- мы пишем на Питоне (Руби, ПХП, Js...)
+- язык не сигнализирует об ошибках
+- None или Exception?
+- слабая типизация
+- нужно много тестов
+
+* Пример
+- Базовая авторизация:
+  - Authorization: Basic QWxhZGRpbjpPcGVuU2VzYW1l
+  - username:password
+  - достать юзера
+- в результате:
+  - ошибка разбиения строк
+  - ошибка декодирования
+  - ошибка разбиения строк (еще раз)
+  - исключение, если нет юзера
+
+* xUnit
+- JUnit -- дедушка современных тест-систем
+- портирован на все что можно
+- прошел испытание временем
+- не учитывает особенности целевой платформы
+
+* Тесты на ООП -- плохо
+- связывание сущностей, наследование, миксины
+- тесты каскадно отваливаются
+- нет повторного использования кода
+- огромные setUp
+
+* Где-где падает?
+#+BEGIN_SRC python
+@patch("some.module.foo", Mock(...))
+@patch("some.module.bar", Mock(...))
+@patch("some.module.baz", Mock(...))
+@patch("some.module.pip", Mock(...))
+class MyTest(TestCase, MyMixin, CacheMixin):
+
+    ...
+
+    @override_settings(VALUE=42)
+    @patch("other.module.func", Mock(...))
+    def test_ok(self):
+        self.do_stuff()
+        ...
+#+END_SRC
+
+* В сетапе, говоришь?
+#+BEGIN_SRC python
+    def setUp(self):
+        self.entity.user_requests_count = 0
+        self.entity.user = {}
+        self.bar_user_goods_by_front_mock = Mock(return_value=(True, OTHER_DATA))
+        self.backend_user_mock = Mock(return_value=(True, BACKEND_MOCK))
+        self.baz_single = Mock(return_value=(True, TEST_SINGLE))
+        self.storage_mock = Mock(return_value=(200, STORAGE_DATA_NEW))
+        self.storage_new_mock = Mock(return_value=(200, FAKE_STORAGE))
+        self.shop_user_stats_mock = Mock(return_value=(True, TEST_USER_STATS_RESPONSE))
+        self.shop_mock = Mock(return_value=(True, TEST_LIST_RESPONSE))
+        self.user_mock = Mock(return_value=(True, TEST_EVENTS_USER_SHOP))
+        self.list_mock = Mock(return_value=(True, TEST_BAZ))
+        self.user_goods_mock = Mock(side_effect=lambda user_id, **kwargs: (True, {'goods': []}))
+        self.user_friends_mock = Mock(return_value=(200, [{'id': 1}, {'id': 2}, {'id': 3}]))
+        self.current_mock = Mock(return_value=(True, TEST_SOME_DATA))
+        self.test_mock = Mock(return_value=(True, {}))
+        self.price_mock = Mock(return_value=(True, {'data': [TEST_OTHER_DATA]}))
+        self.foo_mock = Mock(return_value=(400, None))
+        self.some_mock = Mock(return_value=(400, None))
+        self.user_money_mock = Mock(return_value=(200, TEST_USER_MONEY))
+        self.foo_some_mock = Mock(return_value=(True, TEST_USER_GOODS))
+        self.foo_some_goods_mock = Mock(return_value=(True, TEST_USER_GOODS_RESPONSE))
+#+END_SRC
+
+* Что такое тест?
+#+BEGIN_SRC python
+test = predicate(Environment)
+#+END_SRC
+[[./img/env1.png]]
+
+* Надо так
+#+BEGIN_SRC python
+test = predicate(env1, env2, ... , envN)
+#+END_SRC
+[[./img/env2.png]]
+
+* Получаются наборы
+#+BEGIN_SRC python
+test_ok = predicate(env1, env2)
+test_failture = predicate(env1)
+test_high_price = predicate(env1, env2, env3)
+#+END_SRC
+
+* Фреймворки на фикстурах
+- Clojure(script) core.test
+- PyTest
+
+* Что такое фикстура?
+- любой объект с тремя стадиями:
+  - инициализация
+  - участие в исполнении теста
+  - удаление
+#+BEGIN_SRC python
+def test_ok(fixture1, fixture2):
+   ...
+
+f1 = fixture1()
+f2 = fixture1()
+test_ok(f1, f2)
+del f1
+del f2
+#+END_SRC
+- разный срок жизни
+  - функция
+  - модуль
+  - сеанс
+
+* Преимущества
+- тест -- это функция
+- однозначная зависимость от фикстур:
+#+BEGIN_SRC python
+def test_buy(user, goods, cache, auth)
+def test_auth_failture(user, auth)
+#+END_SRC
+- независимость тестов
+- настоящее переиспользование кода
+
+* REST-микросервис
+- Фикстура -- сервис авторизации
+- не надо мокать, все запросы уходят в localhost
+#+BEGIN_SRC python
+app = Flask(__name__)
+
+@app.route("/user/auth")
+def endpoint_auth(requrest):
+   return jsonify({
+       'user': {'name': 'User Name', 'status': 'active'}
+   })
+
+@pytest.yield_fixture(scope="session")
+def fix_auth():
+   from multiprocess import Process
+   p = Process(app.run, "127.0.0.1", 9001, True)
+   p.start()
+   yield app
+   p.terminate()
+#+END_SRC
+
+* Изображения
+- Фикстура для подготовки изображений
+#+BEGIN_SRC python
+@pytest.yield_fixture(scope="functions")
+def fix_avatar():
+   path = "~/some/path/avatar.png"
+   avatar = PIL.Image(path)
+   yield avatar
+   os.unlink(path)
+#+END_SRC
+
+* Кеш
+- Фикстура для чистого кеша
+#+BEGIN_SRC python
+@pytest.fixture(scope='function')
+def cache(request):
+    _cache = django_cache
+    _cache.clear()
+    request.addfinalizer(_cache.clear)
+    return _cache
+#+END_SRC
+
+* Параметрические фикстуры
+- заменяют циклы
+- легко добавить еще один случай
+- справится ли приложение с аватарой 1x1, 128x1, 5000x5000?
+#+BEGIN_SRC python
+@pytest.fixture(scope="function",
+                params=[(1, 1), (128, 1), (5000, 5000)])
+def fix_avatar((w, h)):
+   path = "~/some/path/avatar.png"
+   avatar = PIL.Image(path, (w, h))
+   ...
+#+END_SRC
+
+* Выводы
+- писать и поддерживать тесты стало легче
+- меньше копипасты
+- на борту фреймворка много других фишек
+- слова коллеги, который с давно питоном: "не думал, что Пайтест меня
+  так удивит"
+
+* Вопросы?
