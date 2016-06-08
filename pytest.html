@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<title>Тесты с фикстурами</title>
+<meta name="author" content="(Иван Гришаев)"/>
+<style type="text/css">
+.underline { text-decoration: underline; }
+</style>
+<link rel="stylesheet" href="http://grishaev.me/talks/css/reveal.css"/>
+
+<link rel="stylesheet" href="http://grishaev.me/talks/css/theme/serif.css" id="theme"/>
+
+
+<!-- If the query includes 'print-pdf', include the PDF print sheet -->
+<script>
+    if( window.location.search.match( /print-pdf/gi ) ) {
+        var link = document.createElement( 'link' );
+        link.rel = 'stylesheet';
+        link.type = 'text/css';
+        link.href = 'http://grishaev.me/talks/css/print/pdf.css';
+        document.getElementsByTagName( 'head' )[0].appendChild( link );
+    }
+</script>
+</head>
+<body>
+<div class="reveal">
+<div class="slides">
+<section id="sec-title-slide"><h1 class="title">Тесты с фикстурами</h1><h2 class="author">Иван Гришаев</h2><p class="date">Created: 2016-06-08 Wed 17:23</p>
+</section>
+
+<section>
+<section id="slide-orgheadline1">
+<h2 id="orgheadline1">Проблема</h2>
+<ul>
+<li>мы пишем на Питоне (Руби, ПХП, Js&#x2026;)</li>
+<li>язык не сигнализирует об ошибках</li>
+<li>None или Exception?</li>
+<li>слабая типизация</li>
+<li>нужно много тестов</li>
+
+</ul>
+
+</section>
+</section>
+<section>
+<section id="slide-orgheadline2">
+<h2 id="orgheadline2">Пример</h2>
+<ul>
+<li>Базовая авторизация:
+<ul>
+<li>Authorization: Basic QWxhZGRpbjpPcGVuU2VzYW1l</li>
+<li>username:password</li>
+<li>достать юзера</li>
+
+</ul></li>
+<li>в результате:
+<ul>
+<li>ошибка разбиения строк</li>
+<li>ошибка декодирования</li>
+<li>ошибка разбиения строк (еще раз)</li>
+<li>исключение, если нет юзера</li>
+
+</ul></li>
+
+</ul>
+
+</section>
+</section>
+<section>
+<section id="slide-orgheadline3">
+<h2 id="orgheadline3">xUnit</h2>
+<ul>
+<li>JUnit &#x2013; дедушка современных тест-систем</li>
+<li>портирован на все что можно</li>
+<li>прошел испытание временем</li>
+<li>не учитывает особенности целевой платформы</li>
+
+</ul>
+
+</section>
+</section>
+<section>
+<section id="slide-orgheadline4">
+<h2 id="orgheadline4">Тесты на ООП &#x2013; плохо</h2>
+<ul>
+<li>связывание сущностей, наследование, миксины</li>
+<li>тесты каскадно отваливаются</li>
+<li>нет повторного использования кода</li>
+<li>огромные setUp</li>
+
+</ul>
+
+</section>
+</section>
+<section>
+<section id="slide-orgheadline5">
+<h2 id="orgheadline5">Где-где падает?</h2>
+<div class="org-src-container">
+
+<pre  class="src src-python"><span style="color: #228b22;">@patch</span>(<span style="color: #8b008b;">"some.module.foo"</span>, Mock(...))
+<span style="color: #228b22;">@patch</span>(<span style="color: #8b008b;">"some.module.bar"</span>, Mock(...))
+<span style="color: #228b22;">@patch</span>(<span style="color: #8b008b;">"some.module.baz"</span>, Mock(...))
+<span style="color: #228b22;">@patch</span>(<span style="color: #8b008b;">"some.module.pip"</span>, Mock(...))
+<span style="color: #0000cd;">class</span> <span style="color: #228b22;">MyTest</span>(TestCase, MyMixin, CacheMixin):
+
+    ...
+
+    <span style="color: #228b22;">@override_settings</span>(VALUE=42)
+    <span style="color: #228b22;">@patch</span>(<span style="color: #8b008b;">"other.module.func"</span>, Mock(...))
+    <span style="color: #0000cd;">def</span> <span style="color: #ff0000;">test_ok</span>(<span style="color: #0000cd;">self</span>):
+        <span style="color: #0000cd;">self</span>.do_stuff()
+        ...
+</pre>
+</div>
+
+</section>
+</section>
+<section>
+<section id="slide-orgheadline6">
+<h2 id="orgheadline6">В сетапе, говоришь?</h2>
+<div class="org-src-container">
+
+<pre  class="src src-python"><span style="color: #0000cd;">def</span> <span style="color: #ff0000;">setUp</span>(<span style="color: #0000cd;">self</span>):
+    <span style="color: #0000cd;">self</span>.entity.user_requests_count = 0
+    <span style="color: #0000cd;">self</span>.entity.user = {}
+    <span style="color: #0000cd;">self</span>.bar_user_goods_by_front_mock = Mock(return_value=(<span style="color: #00006DE06DE0;">True</span>, OTHER_DATA))
+    <span style="color: #0000cd;">self</span>.backend_user_mock = Mock(return_value=(<span style="color: #00006DE06DE0;">True</span>, BACKEND_MOCK))
+    <span style="color: #0000cd;">self</span>.baz_single = Mock(return_value=(<span style="color: #00006DE06DE0;">True</span>, TEST_SINGLE))
+    <span style="color: #0000cd;">self</span>.storage_mock = Mock(return_value=(200, STORAGE_DATA_NEW))
+    <span style="color: #0000cd;">self</span>.storage_new_mock = Mock(return_value=(200, FAKE_STORAGE))
+    <span style="color: #0000cd;">self</span>.shop_user_stats_mock = Mock(return_value=(<span style="color: #00006DE06DE0;">True</span>, TEST_USER_STATS_RESPONSE))
+    <span style="color: #0000cd;">self</span>.shop_mock = Mock(return_value=(<span style="color: #00006DE06DE0;">True</span>, TEST_LIST_RESPONSE))
+    <span style="color: #0000cd;">self</span>.user_mock = Mock(return_value=(<span style="color: #00006DE06DE0;">True</span>, TEST_EVENTS_USER_SHOP))
+    <span style="color: #0000cd;">self</span>.list_mock = Mock(return_value=(<span style="color: #00006DE06DE0;">True</span>, TEST_BAZ))
+    <span style="color: #0000cd;">self</span>.user_goods_mock = Mock(side_effect=<span style="color: #0000cd;">lambda</span> user_id, **kwargs: (<span style="color: #00006DE06DE0;">True</span>, {<span style="color: #8b008b;">'goods'</span>: []}))
+    <span style="color: #0000cd;">self</span>.user_friends_mock = Mock(return_value=(200, [{<span style="color: #8b008b;">'id'</span>: 1}, {<span style="color: #8b008b;">'id'</span>: 2}, {<span style="color: #8b008b;">'id'</span>: 3}]))
+    <span style="color: #0000cd;">self</span>.current_mock = Mock(return_value=(<span style="color: #00006DE06DE0;">True</span>, TEST_SOME_DATA))
+    <span style="color: #0000cd;">self</span>.test_mock = Mock(return_value=(<span style="color: #00006DE06DE0;">True</span>, {}))
+    <span style="color: #0000cd;">self</span>.price_mock = Mock(return_value=(<span style="color: #00006DE06DE0;">True</span>, {<span style="color: #8b008b;">'data'</span>: [TEST_OTHER_DATA]}))
+    <span style="color: #0000cd;">self</span>.foo_mock = Mock(return_value=(400, <span style="color: #00006DE06DE0;">None</span>))
+    <span style="color: #0000cd;">self</span>.some_mock = Mock(return_value=(400, <span style="color: #00006DE06DE0;">None</span>))
+    <span style="color: #0000cd;">self</span>.user_money_mock = Mock(return_value=(200, TEST_USER_MONEY))
+    <span style="color: #0000cd;">self</span>.foo_some_mock = Mock(return_value=(<span style="color: #00006DE06DE0;">True</span>, TEST_USER_GOODS))
+    <span style="color: #0000cd;">self</span>.foo_some_goods_mock = Mock(return_value=(<span style="color: #00006DE06DE0;">True</span>, TEST_USER_GOODS_RESPONSE))
+</pre>
+</div>
+
+</section>
+</section>
+<section>
+<section id="slide-orgheadline7">
+<h2 id="orgheadline7">Что такое тест?</h2>
+<div class="org-src-container">
+
+<pre  class="src src-python"><span style="color: #a0522d;">test</span> = predicate(Environment)
+</pre>
+</div>
+
+<div class="figure">
+<p><img src="./img/env1.png" alt="env1.png" />
+</p>
+</div>
+
+</section>
+</section>
+<section>
+<section id="slide-orgheadline8">
+<h2 id="orgheadline8">Надо так</h2>
+<div class="org-src-container">
+
+<pre  class="src src-python"><span style="color: #a0522d;">test</span> = predicate(env1, env2, ... , envN)
+</pre>
+</div>
+
+<div class="figure">
+<p><img src="./img/env2.png" alt="env2.png" />
+</p>
+</div>
+
+</section>
+</section>
+<section>
+<section id="slide-orgheadline9">
+<h2 id="orgheadline9">Получаются наборы</h2>
+<div class="org-src-container">
+
+<pre  class="src src-python"><span style="color: #a0522d;">test_ok</span> = predicate(env1, env2)
+<span style="color: #a0522d;">test_failture</span> = predicate(env1)
+<span style="color: #a0522d;">test_high_price</span> = predicate(env1, env2, env3)
+</pre>
+</div>
+
+</section>
+</section>
+<section>
+<section id="slide-orgheadline10">
+<h2 id="orgheadline10">Фреймворки на фикстурах</h2>
+<ul>
+<li>Clojure(script) core.test</li>
+<li>PyTest</li>
+
+</ul>
+
+</section>
+</section>
+<section>
+<section id="slide-orgheadline11">
+<h2 id="orgheadline11">Что такое фикстура?</h2>
+<ul>
+<li>любой объект с тремя стадиями:
+<ul>
+<li>инициализация</li>
+<li>участие в исполнении теста</li>
+<li>удаление</li>
+
+</ul></li>
+
+</ul>
+<div class="org-src-container">
+
+<pre  class="src src-python"><span style="color: #0000cd;">def</span> <span style="color: #ff0000;">test_ok</span>(fixture1, fixture2):
+   ...
+
+<span style="color: #a0522d;">f1</span> = fixture1()
+<span style="color: #a0522d;">f2</span> = fixture1()
+test_ok(f1, f2)
+<span style="color: #0000cd;">del</span> f1
+<span style="color: #0000cd;">del</span> f2
+</pre>
+</div>
+<ul>
+<li>разный срок жизни
+<ul>
+<li>функция</li>
+<li>модуль</li>
+<li>сеанс</li>
+
+</ul></li>
+
+</ul>
+
+</section>
+</section>
+<section>
+<section id="slide-orgheadline12">
+<h2 id="orgheadline12">Преимущества</h2>
+<ul>
+<li>тест &#x2013; это функция</li>
+<li>однозначная зависимость от фикстур:</li>
+
+</ul>
+<div class="org-src-container">
+
+<pre  class="src src-python"><span style="color: #0000cd;">def</span> <span style="color: #ff0000;">test_buy</span>(user, goods, cache, auth)
+<span style="color: #0000cd;">def</span> <span style="color: #ff0000;">test_auth_failture</span>(user, auth)
+</pre>
+</div>
+<ul>
+<li>независимость тестов</li>
+<li>настоящее переиспользование кода</li>
+
+</ul>
+
+</section>
+</section>
+<section>
+<section id="slide-orgheadline13">
+<h2 id="orgheadline13">REST-микросервис</h2>
+<ul>
+<li>Фикстура &#x2013; сервис авторизации</li>
+<li>не надо мокать, все запросы уходят в localhost</li>
+
+</ul>
+<div class="org-src-container">
+
+<pre  class="src src-python"><span style="color: #a0522d;">app</span> = Flask(<span style="color: #b35caf;">__name__</span>)
+
+<span style="color: #228b22;">@app.route</span>(<span style="color: #8b008b;">"/user/auth"</span>)
+<span style="color: #0000cd;">def</span> <span style="color: #ff0000;">endpoint_auth</span>(requrest):
+   <span style="color: #0000cd;">return</span> jsonify({
+       <span style="color: #8b008b;">'user'</span>: {<span style="color: #8b008b;">'name'</span>: <span style="color: #8b008b;">'User Name'</span>, <span style="color: #8b008b;">'status'</span>: <span style="color: #8b008b;">'active'</span>}
+   })
+
+<span style="color: #228b22;">@pytest.yield_fixture</span>(scope=<span style="color: #8b008b;">"session"</span>)
+<span style="color: #0000cd;">def</span> <span style="color: #ff0000;">fix_auth</span>():
+   <span style="color: #0000cd;">from</span> multiprocess <span style="color: #0000cd;">import</span> Process
+   <span style="color: #a0522d;">p</span> = Process(app.run, <span style="color: #8b008b;">"127.0.0.1"</span>, 9001, <span style="color: #00006DE06DE0;">True</span>)
+   p.start()
+   <span style="color: #0000cd;">yield</span> app
+   p.terminate()
+</pre>
+</div>
+
+</section>
+</section>
+<section>
+<section id="slide-orgheadline14">
+<h2 id="orgheadline14">Изображения</h2>
+<ul>
+<li>Фикстура для подготовки изображений</li>
+
+</ul>
+<div class="org-src-container">
+
+<pre  class="src src-python"><span style="color: #228b22;">@pytest.yield_fixture</span>(scope=<span style="color: #8b008b;">"functions"</span>)
+<span style="color: #0000cd;">def</span> <span style="color: #ff0000;">fix_avatar</span>():
+   <span style="color: #a0522d;">path</span> = <span style="color: #8b008b;">"~/some/path/avatar.png"</span>
+   <span style="color: #a0522d;">avatar</span> = PIL.Image(path)
+   <span style="color: #0000cd;">yield</span> avatar
+   os.unlink(path)
+</pre>
+</div>
+
+</section>
+</section>
+<section>
+<section id="slide-orgheadline15">
+<h2 id="orgheadline15">Кеш</h2>
+<ul>
+<li>Фикстура для чистого кеша</li>
+
+</ul>
+<div class="org-src-container">
+
+<pre  class="src src-python"><span style="color: #228b22;">@pytest.fixture</span>(scope=<span style="color: #8b008b;">'function'</span>)
+<span style="color: #0000cd;">def</span> <span style="color: #ff0000;">cache</span>(request):
+    <span style="color: #a0522d;">_cache</span> = django_cache
+    _cache.clear()
+    request.addfinalizer(_cache.clear)
+    <span style="color: #0000cd;">return</span> _cache
+</pre>
+</div>
+
+</section>
+</section>
+<section>
+<section id="slide-orgheadline16">
+<h2 id="orgheadline16">Параметрические фикстуры</h2>
+<ul>
+<li>заменяют циклы</li>
+<li>легко добавить еще один случай</li>
+<li>справится ли приложение с аватарой 1x1, 128x1, 5000x5000?</li>
+
+</ul>
+<div class="org-src-container">
+
+<pre  class="src src-python"><span style="color: #228b22;">@pytest.fixture</span>(scope=<span style="color: #8b008b;">"function"</span>,
+                params=[(1, 1), (128, 1), (5000, 5000)])
+<span style="color: #0000cd;">def</span> <span style="color: #ff0000;">fix_avatar</span>((w, h)):
+   <span style="color: #a0522d;">path</span> = <span style="color: #8b008b;">"~/some/path/avatar.png"</span>
+   <span style="color: #a0522d;">avatar</span> = PIL.Image(path, (w, h))
+   ...
+</pre>
+</div>
+
+</section>
+</section>
+<section>
+<section id="slide-orgheadline17">
+<h2 id="orgheadline17">Выводы</h2>
+<ul>
+<li>писать и поддерживать тесты стало легче</li>
+<li>меньше копипасты</li>
+<li>на борту фреймворка много других фишек</li>
+<li>слова коллеги, который с давно питоном: "не думал, что Пайтест меня
+так удивит"</li>
+
+</ul>
+
+</section>
+</section>
+<section>
+<section id="slide-orgheadline18">
+<h2 id="orgheadline18">Вопросы?</h2>
+</section>
+</section>
+</div>
+</div>
+<script src="http://grishaev.me/talks/lib/js/head.min.js"></script>
+<script src="http://grishaev.me/talks/js/reveal.js"></script>
+
+<script>
+// Full list of configuration options available here:
+// https://github.com/hakimel/reveal.js#configuration
+Reveal.initialize({
+
+controls: true,
+progress: true,
+history: false,
+center: true,
+slideNumber: false,
+rollingLinks: false,
+keyboard: true,
+overview: true,
+
+theme: Reveal.getQueryHash().theme, // available themes are in /css/theme
+transition: Reveal.getQueryHash().transition || 'none', // default/cube/page/concave/zoom/linear/fade/none
+transitionSpeed: 'default',
+multiplex: {
+    secret: '', // null if client
+    id: '', // id, obtained from socket.io server
+    url: '' // Location of socket.io server
+},
+
+// Optional libraries used to extend on reveal.js
+dependencies: [
+ { src: 'http://grishaev.me/talks/lib/js/classList.js', condition: function() { return !document.body.classList; } },
+ { src: 'http://grishaev.me/talks/plugin/markdown/marked.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
+ { src: 'http://grishaev.me/talks/plugin/markdown/markdown.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
+ { src: 'http://grishaev.me/talks/plugin/zoom-js/zoom.js', async: true, condition: function() { return !!document.body.classList; } },
+ { src: 'http://grishaev.me/talks/plugin/notes/notes.js', async: true, condition: function() { return !!document.body.classList; } }]
+});
+</script>
+</body>
+</html>
