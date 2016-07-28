@@ -1,0 +1,579 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<title>Монады</title>
+<meta name="author" content="(Иван Гришаев)"/>
+<style type="text/css">
+.underline { text-decoration: underline; }
+</style>
+<link rel="stylesheet" href="http://grishaev.me/talks/css/reveal.css"/>
+
+<link rel="stylesheet" href="http://grishaev.me/talks/css/theme/simple.css" id="theme"/>
+
+
+<!-- If the query includes 'print-pdf', include the PDF print sheet -->
+<script>
+    if( window.location.search.match( /print-pdf/gi ) ) {
+        var link = document.createElement( 'link' );
+        link.rel = 'stylesheet';
+        link.type = 'text/css';
+        link.href = 'http://grishaev.me/talks/css/print/pdf.css';
+        document.getElementsByTagName( 'head' )[0].appendChild( link );
+    }
+</script>
+</head>
+<body>
+<div class="reveal">
+<div class="slides">
+<section id="sec-title-slide"><h1 class="title">Монады</h1><h2 class="author">Иван Гришаев</h2><p class="date">Created: 2016-07-28 Thu 16:50</p>
+</section>
+
+<section>
+<section id="slide-orgheadline1">
+<h2 id="orgheadline1">О чем речь</h2>
+<ul>
+<li>Что такое монады</li>
+<li>Основные мифы</li>
+<li>Где и для чего используются</li>
+
+</ul>
+
+</section>
+</section>
+<section>
+<section id="slide-orgheadline2">
+<h2 id="orgheadline2">Код не линейный</h2>
+
+<div class="figure">
+<p><img src="./img/monad/non-linear.png" alt="non-linear.png" />
+</p>
+</div>
+
+</section>
+</section>
+<section>
+<section id="slide-orgheadline3">
+<h2 id="orgheadline3">А хотелось бы линейный</h2>
+<div class="org-src-container">
+
+<pre  class="src src-clojure">(<span style="color: #0000cd;">defn</span> <span style="color: #ff0000;">get-user-feed</span> [term]
+  {<span style="color: #00006DE06DE0;">:pre</span> [(<span style="color: #0000cd;">-&gt;</span> term <span style="color: #ff0000;">string?</span>)]
+   <span style="color: #00006DE06DE0;">:post</span> [(<span style="color: #0000cd;">-&gt;</span> <span style="color: #a0522d;">%</span> <span style="color: #ff0000;">string?</span>)]}
+  (<span style="color: #0000cd;">-&gt;</span> term
+      validate-name
+      get-page-url
+      get-htree
+      get-data
+      check-data-private
+      (get-rss term)
+      indent-str))
+</pre>
+</div>
+
+</section>
+</section>
+<section>
+<section id="slide-orgheadline4">
+<h2 id="orgheadline4">Обработка ошибок</h2>
+<ul>
+<li>None</li>
+<li>Exception</li>
+<li>(err, data)</li>
+
+</ul>
+
+</section>
+</section>
+<section>
+<section id="slide-orgheadline5">
+<h2 id="orgheadline5">Null</h2>
+<ul>
+<li>он же None, Nil, Nothing</li>
+
+</ul>
+<div class="org-src-container">
+
+<pre  class="src src-python"><span style="color: #0000cd;">def</span> <span style="color: #ff0000;">div</span>(a, b):
+    <span style="color: #0000cd;">if</span> b == 0:
+        <span style="color: #0000cd;">return</span> <span style="color: #00006DE06DE0;">None</span>
+    <span style="color: #0000cd;">else</span>:
+        <span style="color: #0000cd;">return</span> a / b
+</pre>
+</div>
+
+</section>
+</section>
+<section>
+<section id="slide-orgheadline6">
+<h2 id="orgheadline6">Проблемы</h2>
+<div class="org-src-container">
+
+<pre  class="src src-java">- &#1055;&#1072;&#1095;&#1082;&#1072; &#1087;&#1088;&#1086;&#1074;&#1077;&#1088;&#1086;&#1082; &#1074;&#1080;&#1076;&#1072;
+String countryName(<span style="color: #228b22;">String</span> <span style="color: #a0522d;">userId</span>) {
+    <span style="color: #228b22;">User</span> <span style="color: #a0522d;">user</span>; <span style="color: #228b22;">Phone</span> <span style="color: #a0522d;">phone</span>; <span style="color: #228b22;">String</span> <span style="color: #a0522d;">cc</span>; <span style="color: #228b22;">Country</span> <span style="color: #a0522d;">country</span>;
+    <span style="color: #0000cd;">return</span> userid != <span style="color: #00006DE06DE0;">null</span>
+       &amp;&amp; (user = db.findUser(userid)) != <span style="color: #00006DE06DE0;">null</span>
+       &amp;&amp; (phone = user.getPhone) != <span style="color: #00006DE06DE0;">null</span>
+       &amp;&amp; (cc = phone.getCountryCode) != <span style="color: #00006DE06DE0;">null</span>
+       &amp;&amp; (country = Countries.findByCode(cc)) != <span style="color: #00006DE06DE0;">null</span> ? country.getName() : <span style="color: #00006DE06DE0;">null</span>
+  }
+</pre>
+</div>
+<ul>
+<li>Null проваливается туда, где его не ждут</li>
+<li>Трудно отследить, откуда пришел Null</li>
+
+</ul>
+
+</section>
+</section>
+<section>
+<section id="slide-orgheadline7">
+<h2 id="orgheadline7">NPE повсюду</h2>
+<ul>
+<li>Exception in thread "main" java.lang.NullPointerException</li>
+<li>"Undefined" is not a function</li>
+<li>AttributeError: 'NoneType' object has no attribute 'get'</li>
+<li>40% багов*</li>
+
+</ul>
+
+</section>
+</section>
+<section>
+<section id="slide-orgheadline8">
+<h2 id="orgheadline8">Исключения</h2>
+<ul>
+<li>Во всех мейнстрим-языках</li>
+<li>Стандарт</li>
+
+</ul>
+<div class="org-src-container">
+
+<pre  class="src src-python"><span style="color: #0000cd;">try</span>:
+    <span style="color: #a0522d;">res</span> = a / b
+<span style="color: #0000cd;">except</span> <span style="color: #228b22;">ZeroDivisionError</span>:
+    <span style="color: #a0522d;">res</span> = 0
+</pre>
+</div>
+
+</section>
+</section>
+<section>
+<section id="slide-orgheadline9">
+<h2 id="orgheadline9">Проблемы</h2>
+<ul>
+<li>расстояние между try и catch бывает огромно</li>
+<li>неявный GOTO</li>
+<li>забываем перехватывать все случаи</li>
+
+</ul>
+
+</section>
+</section>
+<section>
+<section id="slide-orgheadline10">
+<h2 id="orgheadline10">Пара</h2>
+<ul>
+<li>Golang, Javascript, Lua</li>
+<li>это почти монада Either</li>
+
+</ul>
+<div class="org-src-container">
+
+<pre  class="src src-python"><span style="color: #0000cd;">def</span> <span style="color: #ff0000;">div</span>(a, b):
+    <span style="color: #0000cd;">if</span> b == 0:
+        <span style="color: #0000cd;">return</span> <span style="color: #228b22;">ZeroDivisionError</span>(a, b), <span style="color: #00006DE06DE0;">None</span>
+    <span style="color: #0000cd;">else</span>:
+        <span style="color: #0000cd;">return</span> <span style="color: #00006DE06DE0;">None</span>, a / b
+
+<span style="color: #a0522d;">err</span>, <span style="color: #a0522d;">res</span> = div(10, 2)
+<span style="color: #a0522d;">err</span>, <span style="color: #a0522d;">res</span> = div(10, 0)
+</pre>
+</div>
+
+</section>
+</section>
+<section>
+<section id="slide-orgheadline11">
+<h2 id="orgheadline11">Проблемы</h2>
+<ul>
+<li>пару можно обмануть</li>
+
+</ul>
+<div class="org-src-container">
+
+<pre  class="src src-python"><span style="color: #a0522d;">data</span> = get_pair()[1]
+<span style="color: #a0522d;">data</span> = get_pair() <span style="color: #b22222;"># </span><span style="color: #b22222;">data first</span>
+</pre>
+</div>
+
+</section>
+</section>
+<section>
+<section id="slide-orgheadline12">
+<h2 id="orgheadline12">Хочется так</h2>
+
+<div class="figure">
+<p><img src="./img/monad/monad-cubes.png" alt="monad-cubes.png" />
+</p>
+</div>
+
+</section>
+</section>
+<section>
+<section id="slide-orgheadline13">
+<h2 id="orgheadline13">Монада</h2>
+<ul>
+<li>"единое", "неделимое"</li>
+<li>контейнер с неоднозначной величиной</li>
+<li>линеаризация кода</li>
+<li>особый доступ к скрытому значению</li>
+
+</ul>
+
+</section>
+</section>
+<section>
+<section id="slide-orgheadline14">
+<h2 id="orgheadline14">Распутаем код</h2>
+<ul>
+<li>пирамида</li>
+
+</ul>
+
+<div class="figure">
+<p><img src="./img/monad/pyramid.png" alt="pyramid.png" />
+</p>
+</div>
+
+</section>
+</section>
+<section>
+<section id="slide-orgheadline15">
+<h2 id="orgheadline15">(c) Railway programming (c)</h2>
+
+<div class="figure">
+<p><img src="./img/monad/railway.png" alt="railway.png" />
+</p>
+</div>
+<ul>
+<li>программирование на рельсах (не Руби)</li>
+<li>серия статей, туториалов</li>
+<li>F#, функциональный язык</li>
+
+</ul>
+
+</section>
+</section>
+<section>
+<section id="slide-orgheadline16">
+<h2 id="orgheadline16">Линейность</h2>
+<ul>
+<li>Хаскел</li>
+
+</ul>
+<div class="org-src-container">
+
+<pre  class="src src-haskell">x <span style="color: #ff0000;">&gt;&gt;=</span> getData <span style="color: #a0522d;">&gt;&gt;=</span> processData <span style="color: #a0522d;">&gt;&gt;=</span> printData
+</pre>
+</div>
+<ul>
+<li>Шелл</li>
+
+</ul>
+<div class="org-src-container">
+
+<pre  class="src src-shell"><span style="color: #b35caf;">echo</span> <span style="color: #8b008b;">"foo"</span> | util.py | script.pl | grep | sed  &gt; data.txt 2&gt; error.log
+</pre>
+</div>
+
+</section>
+</section>
+<section>
+<section id="slide-orgheadline17">
+<h2 id="orgheadline17">Понятия</h2>
+<ul>
+<li>плоское значение (x)</li>
+<li>монадное значение (mv)</li>
+<li>монадная функция (mf)</li>
+<li>единица, юнит (конструктор)</li>
+<li>биндинг (связывание)</li>
+
+</ul>
+
+</section>
+</section>
+<section>
+<section id="slide-orgheadline18">
+<h2 id="orgheadline18">Монадный конвеер</h2>
+<ul>
+<li>набор монадных функций</li>
+<li>каждая переводит плоское значение в монадное</li>
+<li>оператор &gt;&gt;= собирает конвеер</li>
+
+</ul>
+
+</section>
+</section>
+<section>
+<section id="slide-orgheadline19">
+<h2 id="orgheadline19">Примеры мне, примеры!</h2>
+<div class="org-src-container">
+
+<pre  class="src src-python"><span style="color: #0000cd;">def</span> <span style="color: #ff0000;">ediv</span>(a, b):
+    <span style="color: #0000cd;">if</span> b == 0:
+        <span style="color: #0000cd;">return</span> Left(<span style="color: #8b008b;">"Div by zero"</span>)
+    <span style="color: #0000cd;">else</span>:
+        <span style="color: #0000cd;">return</span> Right(a / b)
+
+<span style="color: #0000cd;">def</span> <span style="color: #ff0000;">esqrt</span>(a):
+    <span style="color: #0000cd;">if</span> a &lt; 0:
+        <span style="color: #0000cd;">return</span> Left(<span style="color: #8b008b;">"Negative number"</span>)
+    <span style="color: #0000cd;">else</span>:
+        <span style="color: #0000cd;">return</span> Right(math.sqrt(a))
+
+EitherStrNum(16) &gt;&gt; (ediv, 4) &gt;&gt; esqrt
+&gt;&gt;&gt; Right[2.0]
+
+EitherStrNum(16) &gt;&gt; (ediv, 0) &gt;&gt; esqrt
+&gt;&gt;&gt; Left[Div by zero]
+</pre>
+</div>
+
+</section>
+</section>
+<section>
+<section id="slide-orgheadline20">
+<h2 id="orgheadline20">Другая точка зрения</h2>
+<ul>
+<li>монада &#x2013; не контейнер</li>
+<li>это действие над объектом</li>
+<li>функции &#x2013; это данные</li>
+
+</ul>
+<div class="org-src-container">
+
+<pre  class="src src-haskell"><span style="color: #ff0000;">main</span> <span style="color: #a0522d;">::</span> <span style="color: #228b22;">IO</span>
+<span style="color: #ff0000;">main</span> <span style="color: #a0522d;">=</span> <span style="color: #0000cd;">do</span>
+   x1 <span style="color: #a0522d;">&lt;-</span> action1
+   x2 <span style="color: #a0522d;">&lt;-</span> action2
+   x3 <span style="color: #a0522d;">&lt;-</span> action3
+   submit x1 x2 x3
+</pre>
+</div>
+
+</section>
+</section>
+<section>
+<section id="slide-orgheadline21">
+<h2 id="orgheadline21">Мифы</h2>
+<ul>
+<li>не используются</li>
+<li>нужно знать матан</li>
+<li>трудно реализовать</li>
+
+</ul>
+
+</section>
+</section>
+<section>
+<section id="slide-orgheadline22">
+<h2 id="orgheadline22">Реальность</h2>
+<ul>
+<li>Haskell, Scala, Clojure, F#</li>
+<li>теория категорий не нужна</li>
+<li>интерфейс простой (Python, Ruby, Js)</li>
+
+</ul>
+<div class="org-src-container">
+
+<pre  class="src src-python"></pre>
+</div>
+
+</section>
+</section>
+<section>
+<section id="slide-orgheadline23">
+<h2 id="orgheadline23">Основные монады</h2>
+<ul>
+<li>Maybe (Some)</li>
+<li>Either</li>
+<li>Try (Error)</li>
+
+</ul>
+
+</section>
+</section>
+<section>
+<section id="slide-orgheadline24">
+<h2 id="orgheadline24">Maybe</h2>
+<ul>
+<li>что-то или ничего</li>
+<li>Just x | Nothing</li>
+<li>Nothing останавливает цепочку</li>
+<li>замена None (Nil, Null, &#x2026;)</li>
+
+</ul>
+
+</section>
+</section>
+<section>
+<section id="slide-orgheadline25">
+<h2 id="orgheadline25">Пример</h2>
+<div class="org-src-container">
+
+<pre  class="src src-scala">def productName(maybeOrder: Option[Order]): Option[String] = {
+    for (val order &lt;- maybeOrder;
+         val lineItem &lt;- order.lineItem;
+         val product &lt;- lineItem.product)
+             yield product.name
+}
+</pre>
+</div>
+
+</section>
+</section>
+<section>
+<section id="slide-orgheadline26">
+<h2 id="orgheadline26">Either</h2>
+<ul>
+<li>либо то, либо другое</li>
+<li>Left x | Right y</li>
+<li>левое значение считаем ошибкой</li>
+<li>левое значение останавливает цепочку</li>
+
+</ul>
+
+</section>
+</section>
+<section>
+<section id="slide-orgheadline27">
+<h2 id="orgheadline27">Пример</h2>
+<div class="org-src-container">
+
+<pre  class="src src-scala">import scala.io.Source
+import java.net.URL
+def getContent(url: URL): Either[String, Source] =
+  if (url.getHost.contains("google"))
+    Left("Requested URL is blocked for the good of the people!")
+  else
+    Right(Source.fromURL(url))
+
+getContent(new URL("http://google.com")) match {
+  case Left(msg) =&gt; println(msg)
+  case Right(source) =&gt; source.getLines.foreach(println)
+}
+</pre>
+</div>
+
+</section>
+</section>
+<section>
+<section id="slide-orgheadline28">
+<h2 id="orgheadline28">Try (Error)</h2>
+<ul>
+<li>появилась в Скале</li>
+<li>часто используется</li>
+<li>подавляет исключения</li>
+<li>Success x | Failture exc</li>
+
+</ul>
+
+</section>
+</section>
+<section>
+<section id="slide-orgheadline29">
+<h2 id="orgheadline29">Пример</h2>
+<div class="org-src-container">
+
+<pre  class="src src-scala">def parseURL(url: String): Try[URL] = Try(new URL(url))
+
+val url = parseURL(Console.readLine("URL: ")) getOrElse new URL("http://duckduckgo.com")
+</pre>
+</div>
+
+</section>
+</section>
+<section>
+<section id="slide-orgheadline30">
+<h2 id="orgheadline30">Не только ошибки</h2>
+<ul>
+<li>IO</li>
+<li>Set</li>
+<li>List</li>
+<li>State</li>
+<li>почти любая коллекция</li>
+
+</ul>
+
+</section>
+</section>
+<section>
+<section id="slide-orgheadline31">
+<h2 id="orgheadline31">Выводы</h2>
+<ul>
+<li>монада &#x2013; операция над объектом</li>
+<li>делает код линейным</li>
+<li>легко создать силами языка</li>
+
+</ul>
+
+</section>
+</section>
+<section>
+<section id="slide-orgheadline32">
+<h2 id="orgheadline32">Самореклама</h2>
+<ul>
+<li><a href="https://github.com/igrishaev/f">https://github.com/igrishaev/f</a></li>
+<li><a href="https://habrahabr.ru/post/305750/">https://habrahabr.ru/post/305750/</a></li>
+
+</ul>
+
+</section>
+</section>
+<section>
+<section id="slide-orgheadline33">
+<h2 id="orgheadline33">Вопросы?</h2>
+</section>
+</section>
+</div>
+</div>
+<script src="http://grishaev.me/talks/lib/js/head.min.js"></script>
+<script src="http://grishaev.me/talks/js/reveal.js"></script>
+
+<script>
+// Full list of configuration options available here:
+// https://github.com/hakimel/reveal.js#configuration
+Reveal.initialize({
+
+controls: true,
+progress: true,
+history: false,
+center: true,
+slideNumber: false,
+rollingLinks: false,
+keyboard: true,
+overview: true,
+
+theme: Reveal.getQueryHash().theme, // available themes are in /css/theme
+transition: Reveal.getQueryHash().transition || 'none', // default/cube/page/concave/zoom/linear/fade/none
+transitionSpeed: 'default',
+multiplex: {
+    secret: '', // null if client
+    id: '', // id, obtained from socket.io server
+    url: '' // Location of socket.io server
+},
+
+// Optional libraries used to extend on reveal.js
+dependencies: [
+ { src: 'http://grishaev.me/talks/lib/js/classList.js', condition: function() { return !document.body.classList; } },
+ { src: 'http://grishaev.me/talks/plugin/markdown/marked.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
+ { src: 'http://grishaev.me/talks/plugin/markdown/markdown.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
+ { src: 'http://grishaev.me/talks/plugin/zoom-js/zoom.js', async: true, condition: function() { return !!document.body.classList; } },
+ { src: 'http://grishaev.me/talks/plugin/notes/notes.js', async: true, condition: function() { return !!document.body.classList; } }]
+});
+</script>
+</body>
+</html>

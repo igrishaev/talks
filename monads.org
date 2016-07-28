@@ -1,0 +1,264 @@
+#+EMAIL: ivan@grishaev.me
+#+AUTHOR: Иван Гришаев
+#+TITLE: Монады
+#+REVEAL_ROOT: http://grishaev.me/talks
+#+REVEAL_TRANS: none
+#+REVEAL_THEME: simple
+#+OPTIONS: reveal_slide_number:nil num:nil toc:nil
+
+* О чем речь
+- Что такое монады
+- Основные мифы
+- Где и для чего используются
+
+* Код не линейный
+[[./img/monad/non-linear.png]]
+
+* А хотелось бы линейный
+#+BEGIN_SRC clojure
+(defn get-user-feed [term]
+  {:pre [(-> term string?)]
+   :post [(-> % string?)]}
+  (-> term
+      validate-name
+      get-page-url
+      get-htree
+      get-data
+      check-data-private
+      (get-rss term)
+      indent-str))
+#+END_SRC
+
+* Обработка ошибок
+- None
+- Exception
+- (err, data)
+
+* Null
+- он же None, Nil, Nothing
+#+BEGIN_SRC python
+def div(a, b):
+    if b == 0:
+        return None
+    else:
+        return a / b
+#+END_SRC
+
+* Проблемы
+#+BEGIN_SRC java
+- Пачка проверок вида
+String countryName(String userId) {
+    User user; Phone phone; String cc; Country country;
+    return userid != null
+       && (user = db.findUser(userid)) != null
+       && (phone = user.getPhone) != null
+       && (cc = phone.getCountryCode) != null
+       && (country = Countries.findByCode(cc)) != null ? country.getName() : null
+  }
+#+END_SRC
+- Null проваливается туда, где его не ждут
+- Трудно отследить, откуда пришел Null
+
+* NPE повсюду
+- Exception in thread "main" java.lang.NullPointerException
+- "Undefined" is not a function
+- AttributeError: 'NoneType' object has no attribute 'get'
+- 40% багов*
+
+* Исключения
+- Во всех мейнстрим-языках
+- Стандарт
+#+BEGIN_SRC python
+try:
+    res = a / b
+except ZeroDivisionError:
+    res = 0
+#+END_SRC
+
+* Проблемы
+- расстояние между try и catch бывает огромно
+- неявный GOTO
+- забываем перехватывать все случаи
+
+* Пара
+- Golang, Javascript, Lua
+- это почти монада Either
+#+BEGIN_SRC python
+def div(a, b):
+    if b == 0:
+        return ZeroDivisionError(a, b), None
+    else:
+        return None, a / b
+
+err, res = div(10, 2)
+err, res = div(10, 0)
+#+END_SRC
+
+* Проблемы
+- пару можно обмануть
+#+BEGIN_SRC python
+data = get_pair()[1]
+data = get_pair() # data first
+#+END_SRC
+
+* Хочется так
+[[./img/monad/monad-cubes.png]]
+
+* Монада
+- "единое", "неделимое"
+- контейнер с неоднозначной величиной
+- линеаризация кода
+- особый доступ к скрытому значению
+
+* Распутаем код
+- пирамида
+[[./img/monad/pyramid.png]]
+
+* (c) Railway programming (c)
+[[./img/monad/railway.png]]
+- программирование на рельсах (не Руби)
+- серия статей, туториалов
+- F#, функциональный язык
+
+* Линейность
+- Хаскел
+#+BEGIN_SRC haskell
+x >>= getData >>= processData >>= printData
+#+END_SRC
+- Шелл
+#+BEGIN_SRC shell
+echo "foo" | util.py | script.pl | grep | sed  > data.txt 2> error.log
+#+END_SRC
+
+* Понятия
+- плоское значение (x)
+- монадное значение (mv)
+- монадная функция (mf)
+- единица, юнит (конструктор)
+- биндинг (связывание)
+
+* Монадный конвеер
+- набор монадных функций
+- каждая переводит плоское значение в монадное
+- оператор >>= собирает конвеер
+
+* Примеры мне, примеры!
+#+BEGIN_SRC python
+def ediv(a, b):
+    if b == 0:
+        return Left("Div by zero")
+    else:
+        return Right(a / b)
+
+def esqrt(a):
+    if a < 0:
+        return Left("Negative number")
+    else:
+        return Right(math.sqrt(a))
+
+EitherStrNum(16) >> (ediv, 4) >> esqrt
+>>> Right[2.0]
+
+EitherStrNum(16) >> (ediv, 0) >> esqrt
+>>> Left[Div by zero]
+#+END_SRC
+
+* Другая точка зрения
+- монада -- не контейнер
+- это действие над объектом
+- функции -- это данные
+#+BEGIN_SRC haskell
+main :: IO
+main = do
+   x1 <- action1
+   x2 <- action2
+   x3 <- action3
+   submit x1 x2 x3
+#+END_SRC
+
+* Мифы
+- не используются
+- нужно знать матан
+- трудно реализовать
+
+* Реальность
+- Haskell, Scala, Clojure, F#
+- теория категорий не нужна
+- интерфейс простой (Python, Ruby, Js)
+#+BEGIN_SRC python
+#+END_SRC
+
+* Основные монады
+- Maybe (Some)
+- Either
+- Try (Error)
+
+* Maybe
+- что-то или ничего
+- Just x | Nothing
+- Nothing останавливает цепочку
+- замена None (Nil, Null, ...)
+
+* Пример
+#+BEGIN_SRC scala
+def productName(maybeOrder: Option[Order]): Option[String] = {
+    for (val order <- maybeOrder;
+         val lineItem <- order.lineItem;
+         val product <- lineItem.product)
+             yield product.name
+}
+#+END_SRC
+
+* Either
+- либо то, либо другое
+- Left x | Right y
+- левое значение считаем ошибкой
+- левое значение останавливает цепочку
+
+* Пример
+#+BEGIN_SRC scala
+import scala.io.Source
+import java.net.URL
+def getContent(url: URL): Either[String, Source] =
+  if (url.getHost.contains("google"))
+    Left("Requested URL is blocked for the good of the people!")
+  else
+    Right(Source.fromURL(url))
+
+getContent(new URL("http://google.com")) match {
+  case Left(msg) => println(msg)
+  case Right(source) => source.getLines.foreach(println)
+}
+#+END_SRC
+
+* Try (Error)
+- появилась в Скале
+- часто используется
+- подавляет исключения
+- Success x | Failture exc
+
+* Пример
+#+BEGIN_SRC scala
+def parseURL(url: String): Try[URL] = Try(new URL(url))
+
+val url = parseURL(Console.readLine("URL: ")) \
+          getOrElse new URL("http://duckduckgo.com")
+#+END_SRC
+
+* Не только ошибки
+- IO
+- Set
+- List
+- State
+- почти любая коллекция
+
+* Выводы
+- монада -- операция над объектом
+- делает код линейным
+- легко создать силами языка
+
+* Самореклама
+- https://github.com/igrishaev/f
+- https://habrahabr.ru/post/305750/
+
+* Вопросы?
