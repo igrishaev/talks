@@ -1,0 +1,117 @@
+#+EMAIL: ivan@grishaev.me
+#+AUTHOR: Иван Гришаев
+#+TITLE: (Единство и (многобразие (Лиспа)))
+#+REVEAL_ROOT: http://grishaev.me/talks
+#+REVEAL_TRANS: none
+#+REVEAL_THEME: simple
+#+OPTIONS: reveal_slide_number:nil num:nil toc:nil
+
+* Что такое Лисп?
+
+* О чем речь
+
+* Мифы
+- это такой язык
+- это много скобочек
+- это функциональный язык
+- на нем никто не пишет
+
+* Особенности
+
+* Шутка юмора
+https://i.ytimg.com/vi/ZxshHHDfaIg/maxresdefault.jpg
+
+* История
+
+* Полная история
+
+
+* Возможности
+**
+
+
+* Недостатки
+
+* Высказывания о Лиспе
+
+дробная арифметика
+автоматическая сборка мусора
+
+* Преимущества
+- повлиял на другие языки
+
+* Три диалекта
+- Common Lisp
+- Racket
+- Clojure
+
+* Common Lisp
+- объединил множество диалектов в один
+
+* Racket
+- бывший диалект Scheme
+- идеален для обучения
+- богатая библиотека
+- IDE, GUI, веб-сервер
+- на всех платформах
+
+* Clojure
+- Лисп на стероидах
+
+
+* ClojureScript
+- реализация Кложи на Js
+- компилируется в нативный Js
+
+* Где используется?
+
+* Космос
+
+
+* Grammarly
+
+
+
+* NaughtyDog
+
+
+* Крупный бизнес
+- Wallmart
+- Ebay
+- BBC
+- Amazon
+- Verizon
+- ycombinator
+- somewrite
+
+средний возраст
+макросы
+код как данные
+ридер кода
+простые правила
+построить сам себя
+свои исключения
+
+
+
+* Вакансии?
+** Классические диалекты (CL, Racket)
+- встречаются редко
+- не бывают удаленными
+- большая ответственность
+** Clojure(Script)
+- много в США
+- попадается в Европе и Африке
+- до России еще не дошло
+
+* Искать
+** Специальные доски
+- https://jobs.functionalworks.com/
+- https://functionaljobs.com/
+- https://lispjobs.wordpress.com/
+** Сообщества
+- рассылка lisp-hug@lispworks.com
+- группы гугла, например London Clojurian Jobs
+- слак clojurians.slack.com
+
+* Вопросы?
