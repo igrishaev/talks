@@ -6,17 +6,54 @@
 #+REVEAL_THEME: simple
 #+OPTIONS: reveal_slide_number:nil num:nil toc:nil
 
-* Что такое Лисп?
+#+BEGIN_HTML
+<style>
+.reveal pre {
+box-shadow: none;
+font-size: 26pt;
+}
+</style>
+#+END_HTML
 
 * Лисп?
-- это такой язык
-- в нем много скобочек
-- это функциональный язык
+- такой старый язык
+- (со (множеством (скобочек)))
+- функциональный
 - на нем никто не пишет
+
+* Шутка юмора
+https://i.ytimg.com/vi/ZxshHHDfaIg/maxresdefault.jpg
+
+* История
+- Создан в 1958 году (58 лет назад)
+- Попытка сериализовать данные
+- eval, и все завертелось
+
+* Что нес Лисп
+- минимум синтаксиса
+- дробная арифметика
+#+BEGIN_SRC lisp
+(+ (/ 1 7) (/ 6 7))
+> 7
+#+END_SRC
+- автоматическая сборка мусора
+- функциональный стиль
+- попытки программировать ИИ
+- Лисп-машина
+
+* Развитие
+- долго не было стандартов
+- огромное число диалектов
+- пик популярности 80-е
+- спад популярности, стандарт Common Lisp
+- современные диалекты
+
+* Заблуждения
 
 * Это не язык
 - язык LISP был 50 лет назад
 - теперь это идея
+- диалекты лиспа сильно различаются
 
 * Скобочки
 - их не так уж много:
@@ -40,13 +77,12 @@ func(foo, bar)
 * Это не функциональный язык
 - разрешены глобальные переменные
 - коллекции изменяются
-- стало возможно писать в функциональном стиле
+- ФП-стиль лишь поощрается
 
 * Цитаты
 
 * Ларри Уолл (Perl)
 http://www.azquotes.com/picture-quotes/quote-take-lisp-you-know-its-the-most-beautiful-language-in-the-world-at-least-up-until-haskell-larry-wall-112-53-85.jpg
-
 
 * Столлман (GNU, Emacs)
 http://www.azquotes.com/picture-quotes/quote-the-most-powerful-programming-language-is-lisp-if-you-don-t-know-lisp-or-its-variant-richard-stallman-59-24-54.jpg
@@ -55,44 +91,21 @@ http://www.azquotes.com/picture-quotes/quote-the-most-powerful-programming-langu
 http://www.azquotes.com/picture-quotes/quote-emacs-is-written-in-lisp-which-is-the-only-computer-language-that-is-beautiful-neal-stephenson-111-82-19.jpg
 
 * Alan Kay (Smalltalk, OOP)
-- "the greatest single programming language ever designed"
 - "Lisp isn't a language, it's a building material."
+- "the greatest single programming language ever designed"
 
 * Eric Raymond (Mozilla, Linux)
 "Lisp was far more powerful and flexible than any other language of its day; in fact, it is still a better design than most languages of today, twenty-five years later.
 
-* Philip Greenspun (scientist, hacker)
+* Philip Greenspun (hacker)
 "SQL, Lisp, and Haskell are the only programming languages that I've seen where one spends more time thinking than typing."
-
-* Особенности
-- польская нотация
-- Лисп-машина
-
-* Шутка юмора
-https://i.ytimg.com/vi/ZxshHHDfaIg/maxresdefault.jpg
-
-* История
-- Создан в 1958 году (58 лет назад)
-- Попытка сериализовать данные
-- eval
-- ИИ
-
-* Развитие
-- долго не было стандартов
-- огромное число диалектов
-- пик популярности 80-е
--
-
-* Что дал Лисп миру
-- дробная арифметика
-- автоматическая сборка мусора
-- функциональный стиль
-- попытки программировать ИИ
 
 * Повлиял на
 Elixir,  Forth, Haskell, JavaScript, Julia, Logo, Lua, Mathematica, Nim, Perl, Python, R,  Ruby, Scala, Smalltalk, Tcl
 
 * DSL для всего
+- вырождается в код предметной области
+- "нужно взять стандарт и расставить скобки"
 
 * SQL
 #+BEGIN_SRC lisp
@@ -110,7 +123,8 @@ Elixir,  Forth, Haskell, JavaScript, Julia, Logo, Lua, Mathematica, Nim, Perl, P
    [:p "I am a component!"]
    [:p.someclass
     "I have " [:strong "bold"]
-    [:span {:style {:color "red"}} " and red "] "text."]])
+    [:span {:style {:color "red"}} " and red "]
+      "text."]])
 #+END_SRC
 
 * XML
@@ -137,11 +151,6 @@ Elixir,  Forth, Haskell, JavaScript, Julia, Logo, Lua, Mathematica, Nim, Perl, P
 - код это дерево
 - малый срок жизни кода в Гите
 
-* Высказывания о Лиспе
-
-* Преимущества
-- повлиял на другие языки
-
 * Три диалекта
 - Common Lisp
 - Racket
@@ -154,22 +163,30 @@ Elixir,  Forth, Haskell, JavaScript, Julia, Logo, Lua, Mathematica, Nim, Perl, P
 
 * Racket
 - бывший диалект Scheme
-- идеален для обучения
 - богатая библиотека
 - IDE, GUI, веб-сервер
 - на всех платформах
+- идеален для обучения
+- SICP!
 
 * Clojure
 - Лисп на стероидах
 - Компилируется в JVM
-- Создан одним человеком за 2 года...
-- ...на личные средства и время
 - интеграция с java-кодом
 - основной диалект
 
+* Немного об авторе
+- Рич Хики, C++, Java
+- создал язык за 2 года
+- на личные средства и время
+- доклады!
+- главный критерий -- простота
+
 * ClojureScript
-- реализация Кложи на Js
-- компилируется в нативный Js
+- реализация Clojure на Js
+- не только в Clojure-проектах
+- привязки к React
+- одностраничные приложения
 
 * Идеи Лиспа
 
@@ -178,6 +195,7 @@ Elixir,  Forth, Haskell, JavaScript, Julia, Logo, Lua, Mathematica, Nim, Perl, P
 - Код как структура данных
 
 * Пример
+- структура функций + интерпретатор
 #+BEGIN_SRC javascript
 [
   dispatch(AUTHENTICATING),
@@ -218,25 +236,58 @@ class ShoppingList extends React.Component {
 - Re-frame
 
 * Где используется?
-
-* Космос
+- Космос, военщина
+- Заводы
 
 * Grammarly
+- сервис проверки правописания
 
 * NaughtyDog
+- вся серия игр на PlayStation
+- выборочно на PC
+http://s.emuparadise.org/fup/up/36716-Crash_Bandicoot_[U]-1.png
+
+* CAD systems
+- AutoCAD
+- AutoLisp
+- Autodesk
+
+* Emacs
+- Развивается 40+ лет
+- IDE, почтовый клиент
+- работа с документами
+- запуск процессов
 
 * Крупный бизнес
 - Wallmart
 - Ebay
 - BBC
+
+* Крупный бизнес
 - Amazon
 - Verizon
-- ycombinator
-- somewrite
+- Y Combinator (Arc)
+
+* John Carmack
+I just dumped the C++ server I wrote last year for a new one in Racket. May not scale, but it is winning for development even as a newbie.
+
+John Carmack working on Scheme as a VR scripting language
+
+* Мощь Лиспа
 
 * Код как данные
-- код -- это дерево списков
-- код может получать
+- код -- дерево списков
+- макросы получают код как список
+- и возвращают список как будущий код
+- собственный синтаксис
+
+* Код как данные
+#+BEGIN_SRC lisp
+(expr 1 + 2 * (3 + 100) / 42)
+(1, +, 2, *, (, 3, +, 100, ), /, 42, )
+(+, 1, (, /, (, *, 2, (, +, 3, 100,), ), 42, ), ), )
+(+ 1 (/ (* 2 (+ 3 100)) 42)))
+#+END_SRC
 
 * Правила чтения кода
 
@@ -273,7 +324,7 @@ class ShoppingList extends React.Component {
 #+END_SRC
 
 * Стало
-- что угодно!
+- кидаем и ловим что угодно!
 #+BEGIN_SRC clojure
 (throw+ {:type ::bad-tree :tree tree :hint hint})
 ...
@@ -298,7 +349,6 @@ class ShoppingList extends React.Component {
 * Вакансии?
 
 * Классические диалекты (CL, Racket)
-
 - встречаются редко
 - не бывают удаленными
 - большая ответственность
@@ -308,16 +358,14 @@ class ShoppingList extends React.Component {
 - попадается в Европе и Африке
 - до России еще не дошло
 
-* Искать
+* Где искать
 
 * Специальные доски
 - Functionals Works
 - Functional Jobs
 - Lisp Jobs
 
-
 * Сообщества
-
 - рассылка lisp-hug@lispworks.com
 - группы гугла, например London Clojurian Jobs
 - слак clojurians.slack.com
@@ -328,3 +376,8 @@ class ShoppingList extends React.Component {
 - https://jobs.functionalworks.com/
 - https://functionaljobs.com/
 - https://lispjobs.wordpress.com/
+- http://clojurescript.net/
+- http://clojure.org/
+- http://lisp-lang.org/
+- https://groups.google.com/forum/#!msg/racket-users/RFlh0o6l3Ls/8InN7uz-Mv4J
+- https://twitter.com/ID_AA_Carmack/status/577877590070919168
