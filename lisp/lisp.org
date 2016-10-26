@@ -87,9 +87,6 @@ http://www.azquotes.com/picture-quotes/quote-take-lisp-you-know-its-the-most-bea
 * Столлман (GNU, Emacs)
 http://www.azquotes.com/picture-quotes/quote-the-most-powerful-programming-language-is-lisp-if-you-don-t-know-lisp-or-its-variant-richard-stallman-59-24-54.jpg
 
-* Нил Стефенсон (хакер, дизайнер игр)
-http://www.azquotes.com/picture-quotes/quote-emacs-is-written-in-lisp-which-is-the-only-computer-language-that-is-beautiful-neal-stephenson-111-82-19.jpg
-
 * Alan Kay (Smalltalk, OOP)
 - "Lisp isn't a language, it's a building material."
 - "the greatest single programming language ever designed"
@@ -284,8 +281,8 @@ John Carmack working on Scheme as a VR scripting language
 * Код как данные
 #+BEGIN_SRC lisp
 (expr 1 + 2 * (3 + 100) / 42)
-(1, +, 2, *, (, 3, +, 100, ), /, 42, )
-(+, 1, (, /, (, *, 2, (, +, 3, 100,), ), 42, ), ), )
+[1, +, 2, *, (, 3, +, 100, ), /, 42, ]
+[+, 1, (, /, (, *, 2, (, +, 3, 100,), ), 42, ), ), ]
 (+ 1 (/ (* 2 (+ 3 100)) 42)))
 #+END_SRC
 
@@ -300,7 +297,7 @@ John Carmack working on Scheme as a VR scripting language
 #<HASH-TABLE :TEST EQUAL :COUNT 2 {1004EA5DD3}>
 #+END_SRC
 
-* Читаем хеш-таблицы и векторы
+* Хеш-таблицы и векторы
 #+BEGIN_SRC lisp
 > [1 2 "foo"]
 #(1 2 "foo")
@@ -328,8 +325,9 @@ John Carmack working on Scheme as a VR scripting language
 #+BEGIN_SRC clojure
 (throw+ {:type ::bad-tree :tree tree :hint hint})
 ...
-(catch [:type :tensor.parse/bad-tree] {:keys [tree hint]}
-      (log/error "failed to parse tensor" tree "with hint" hint)
+(catch [:type :tensor.parse/bad-tree]
+       {:keys [tree hint]}
+  (log/error "failed to parse" tree "with hint" hint)
 #+END_SRC
 
 * REPL
