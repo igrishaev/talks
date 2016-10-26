@@ -8,34 +8,136 @@
 
 * Что такое Лисп?
 
-* О чем речь
-
-* Мифы
+* Лисп?
 - это такой язык
-- это много скобочек
+- в нем много скобочек
 - это функциональный язык
 - на нем никто не пишет
 
+* Это не язык
+- язык LISP был 50 лет назад
+- теперь это идея
+
+* Скобочки
+- их не так уж много:
+#+BEGIN_SRC lisp
+func(foo, bar)
+..
+(func foo bar)
+#+END_SRC
+
+* Этот ваш JS
+#+BEGIN_SRC javascript
+            })
+          }.bind(this))
+        }
+      })
+    })
+  }
+})
+#+END_SRC
+
+* Это не функциональный язык
+- разрешены глобальные переменные
+- коллекции изменяются
+- стало возможно писать в функциональном стиле
+
+* Цитаты
+
+* Ларри Уолл (Perl)
+http://www.azquotes.com/picture-quotes/quote-take-lisp-you-know-its-the-most-beautiful-language-in-the-world-at-least-up-until-haskell-larry-wall-112-53-85.jpg
+
+
+* Столлман (GNU, Emacs)
+http://www.azquotes.com/picture-quotes/quote-the-most-powerful-programming-language-is-lisp-if-you-don-t-know-lisp-or-its-variant-richard-stallman-59-24-54.jpg
+
+* Нил Стефенсон (хакер, дизайнер игр)
+http://www.azquotes.com/picture-quotes/quote-emacs-is-written-in-lisp-which-is-the-only-computer-language-that-is-beautiful-neal-stephenson-111-82-19.jpg
+
+* Alan Kay (Smalltalk, OOP)
+- "the greatest single programming language ever designed"
+- "Lisp isn't a language, it's a building material."
+
+* Eric Raymond (Mozilla, Linux)
+"Lisp was far more powerful and flexible than any other language of its day; in fact, it is still a better design than most languages of today, twenty-five years later.
+
+* Philip Greenspun (scientist, hacker)
+"SQL, Lisp, and Haskell are the only programming languages that I've seen where one spends more time thinking than typing."
+
 * Особенности
+- польская нотация
+- Лисп-машина
 
 * Шутка юмора
 https://i.ytimg.com/vi/ZxshHHDfaIg/maxresdefault.jpg
 
 * История
+- Создан в 1958 году (58 лет назад)
+- Попытка сериализовать данные
+- eval
+- ИИ
 
-* Полная история
+* Развитие
+- долго не было стандартов
+- огромное число диалектов
+- пик популярности 80-е
+-
 
+* Что дал Лисп миру
+- дробная арифметика
+- автоматическая сборка мусора
+- функциональный стиль
+- попытки программировать ИИ
 
-* Возможности
-**
+* Повлиял на
+Elixir,  Forth, Haskell, JavaScript, Julia, Logo, Lua, Mathematica, Nim, Perl, Python, R,  Ruby, Scala, Smalltalk, Tcl
 
+* DSL для всего
+
+* SQL
+#+BEGIN_SRC lisp
+(select (:title :author :year)
+  (from :books)
+  (where (:and (:>= :year 1995)
+               (:< :year 2010)))
+  (order-by (:desc :year)))
+#+END_SRC
+
+* HTML
+#+BEGIN_SRC clojure
+(defn simple-component []
+  [:div
+   [:p "I am a component!"]
+   [:p.someclass
+    "I have " [:strong "bold"]
+    [:span {:style {:color "red"}} " and red "] "text."]])
+#+END_SRC
+
+* XML
+#+BEGIN_SRC clojure
+(element :foo {:foo-attr "foo value"}
+  (element :bar {:bar-attr "bar value"}
+    (element :baz {} "The baz value1")
+    (element :baz {} "The baz value2")
+    (element :baz {} "The baz value3")))
+#+END_SRC
+
+* HTTP API
+#+BEGIN_SRC clojure
+(context "/api" []
+  (GET "/plus" []
+    :return {:result Long}
+    :query-params [x :- Long, y :- Long]
+    :summary "adds two numbers together"
+    (ok {:result (+ x y)}))
+#+END_SRC
 
 * Недостатки
+- невероятная гибкость
+- код это дерево
+- малый срок жизни кода в Гите
 
 * Высказывания о Лиспе
-
-дробная арифметика
-автоматическая сборка мусора
 
 * Преимущества
 - повлиял на другие языки
@@ -47,6 +149,8 @@ https://i.ytimg.com/vi/ZxshHHDfaIg/maxresdefault.jpg
 
 * Common Lisp
 - объединил множество диалектов в один
+- финансировался DARPA
+- промышленность и военные нужды
 
 * Racket
 - бывший диалект Scheme
@@ -57,23 +161,69 @@ https://i.ytimg.com/vi/ZxshHHDfaIg/maxresdefault.jpg
 
 * Clojure
 - Лисп на стероидах
-
+- Компилируется в JVM
+- Создан одним человеком за 2 года...
+- ...на личные средства и время
+- интеграция с java-кодом
+- основной диалект
 
 * ClojureScript
 - реализация Кложи на Js
 - компилируется в нативный Js
 
+* Идеи Лиспа
+
+* Function Trees
+- Деревья функций
+- Код как структура данных
+
+* Пример
+#+BEGIN_SRC javascript
+[
+  dispatch(AUTHENTICATING),
+  authenticateUser, {
+    error: [
+      dispatch(AUTHENTICATED_ERROR)
+    ],
+    success: [
+      dispatch(AUTHENTICATED_SUCCESS),
+      ...getAssignments
+    ]
+  }
+]
+#+END_SRC
+
+* React.js
+- Интерфейс как дерево компонентов
+- Декларативность
+
+* Пример
+#+BEGIN_SRC javascript
+class ShoppingList extends React.Component {
+  render() {
+    return (
+      <div className="shopping-list">
+        <h1>Shopping List for {this.props.name}</h1>
+        <ButtonWidget>
+        <ul>
+          <li>Instagram</li>
+          <li>WhatsApp</li>
+          <li>Oculus</li>
+#+END_SRC
+
+* React bindings
+- Om
+- Reagent
+- Rum
+- Re-frame
+
 * Где используется?
 
 * Космос
 
-
 * Grammarly
 
-
-
 * NaughtyDog
-
 
 * Крупный бизнес
 - Wallmart
@@ -84,34 +234,97 @@ https://i.ytimg.com/vi/ZxshHHDfaIg/maxresdefault.jpg
 - ycombinator
 - somewrite
 
-средний возраст
-макросы
-код как данные
-ридер кода
-простые правила
-построить сам себя
-свои исключения
+* Код как данные
+- код -- это дерево списков
+- код может получать
 
+* Правила чтения кода
 
+* Читаем JSON
+#+BEGIN_SRC lisp
+> [1, 2, "foo"]
+#(1 2 "foo")
+
+> { "foo": 1, "bar": 2 }
+#<HASH-TABLE :TEST EQUAL :COUNT 2 {1004EA5DD3}>
+#+END_SRC
+
+* Читаем хеш-таблицы и векторы
+#+BEGIN_SRC lisp
+> [1 2 "foo"]
+#(1 2 "foo")
+
+> {:foo 1 :bar 2}
+#<HASH-TABLE :TEST EQUAL :COUNT 2 {1004EA5DD3}>
+#+END_SRC
+
+* Саморасширяемость
+- свое ООП (CLOS)
+- свои исключения (slingshot)
+- дженерики, матчинг, ...
+
+* Было
+- стандартные исключения Джавы
+#+BEGIN_SRC clojure
+(throw (Exception. "my exception message"))
+...
+(catch SQLException se (prn (.getNextException e)))
+(catch Exception2 e (prn "Handle generic exception"))
+#+END_SRC
+
+* Стало
+- что угодно!
+#+BEGIN_SRC clojure
+(throw+ {:type ::bad-tree :tree tree :hint hint})
+...
+(catch [:type :tensor.parse/bad-tree] {:keys [tree hint]}
+      (log/error "failed to parse tensor" tree "with hint" hint)
+#+END_SRC
+
+* REPL
+- Read, Eval, Print, Loop
+- интерактивная разработка
+- горячая замена кода
+- исполнение кода из редактора
+- удаленная отладка
+
+* Навигация
+- код это дерево
+- переходы вглубь, наверх,
+- по текущему уровню
+- сдвиги форм
+- слияние, деление, удаление форм
 
 * Вакансии?
-** Классические диалекты (CL, Racket)
+
+* Классические диалекты (CL, Racket)
+
 - встречаются редко
 - не бывают удаленными
 - большая ответственность
-** Clojure(Script)
+
+* Clojure(Script)
 - много в США
 - попадается в Европе и Африке
 - до России еще не дошло
 
 * Искать
-** Специальные доски
-- https://jobs.functionalworks.com/
-- https://functionaljobs.com/
-- https://lispjobs.wordpress.com/
-** Сообщества
+
+* Специальные доски
+- Functionals Works
+- Functional Jobs
+- Lisp Jobs
+
+
+* Сообщества
+
 - рассылка lisp-hug@lispworks.com
 - группы гугла, например London Clojurian Jobs
 - слак clojurians.slack.com
 
 * Вопросы?
+
+* Ссылки
+- https://jobs.functionalworks.com/
+- https://functionaljobs.com/
+- https://lispjobs.wordpress.com/
