@@ -1,0 +1,859 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<title>(Единство и (многобразие (Лиспа)))</title>
+<meta name="author" content="(Иван Гришаев)"/>
+<style type="text/css">
+.underline { text-decoration: underline; }
+</style>
+<link rel="stylesheet" href="http://grishaev.me/talks/css/reveal.css"/>
+
+<link rel="stylesheet" href="http://grishaev.me/talks/css/theme/simple.css" id="theme"/>
+
+
+<!-- If the query includes 'print-pdf', include the PDF print sheet -->
+<script>
+    if( window.location.search.match( /print-pdf/gi ) ) {
+        var link = document.createElement( 'link' );
+        link.rel = 'stylesheet';
+        link.type = 'text/css';
+        link.href = 'http://grishaev.me/talks/css/print/pdf.css';
+        document.getElementsByTagName( 'head' )[0].appendChild( link );
+    }
+</script>
+</head>
+<body>
+<div class="reveal">
+<div class="slides">
+<section id="sec-title-slide"><h1 class="title">(Единство и (многобразие (Лиспа)))</h1><h2 class="author">Иван Гришаев</h2><p class="date">Created: 2016-10-31 Mon 12:33</p>
+</section>
+<style>
+.reveal pre {
+box-shadow: none;
+font-size: 26pt;
+}
+</style>
+
+<section>
+<section id="slide-orgheadline1">
+<h2 id="orgheadline1">Лисп?</h2>
+<ul>
+<li>такой старый язык</li>
+<li>(со (множеством (скобочек)))</li>
+<li>функциональный</li>
+<li>на нем никто не пишет</li>
+
+</ul>
+
+</section>
+</section>
+<section>
+<section id="slide-orgheadline2">
+<h2 id="orgheadline2">Шутка юмора</h2>
+
+<div class="figure">
+<p><img src="https://i.ytimg.com/vi/ZxshHHDfaIg/maxresdefault.jpg" alt="maxresdefault.jpg" />
+</p>
+</div>
+
+</section>
+</section>
+<section>
+<section id="slide-orgheadline3">
+<h2 id="orgheadline3">История</h2>
+<ul>
+<li>Создан в 1958 году (58 лет назад)</li>
+<li>Попытка сериализовать данные</li>
+<li>eval, и все завертелось</li>
+
+</ul>
+
+</section>
+</section>
+<section>
+<section id="slide-orgheadline4">
+<h2 id="orgheadline4">Что нес Лисп</h2>
+<ul>
+<li>минимум синтаксиса</li>
+<li>дробная арифметика</li>
+
+</ul>
+<div class="org-src-container">
+
+<pre  class="src src-lisp">(+ (/ 1 7) (/ 6 7))
+&gt; 7
+</pre>
+</div>
+<ul>
+<li>автоматическая сборка мусора</li>
+<li>функциональный стиль</li>
+<li>попытки программировать ИИ</li>
+<li>Лисп-машина</li>
+
+</ul>
+
+</section>
+</section>
+<section>
+<section id="slide-orgheadline5">
+<h2 id="orgheadline5">Развитие</h2>
+<ul>
+<li>долго не было стандартов</li>
+<li>огромное число диалектов</li>
+<li>пик популярности 80-е</li>
+<li>спад популярности, стандарт Common Lisp</li>
+<li>современные диалекты</li>
+
+</ul>
+
+</section>
+</section>
+<section>
+<section id="slide-orgheadline6">
+<h2 id="orgheadline6">Заблуждения</h2>
+
+</section>
+</section>
+<section>
+<section id="slide-orgheadline7">
+<h2 id="orgheadline7">Это не язык</h2>
+<ul>
+<li>язык LISP был 50 лет назад</li>
+<li>теперь это идея</li>
+<li>диалекты лиспа сильно различаются</li>
+
+</ul>
+
+</section>
+</section>
+<section>
+<section id="slide-orgheadline8">
+<h2 id="orgheadline8">Скобочки</h2>
+<ul>
+<li>их не так уж много:</li>
+
+</ul>
+<div class="org-src-container">
+
+<pre  class="src src-lisp">func(foo, bar)
+..
+(func foo bar)
+</pre>
+</div>
+
+</section>
+</section>
+<section>
+<section id="slide-orgheadline9">
+<h2 id="orgheadline9">Этот ваш JS</h2>
+<div class="org-src-container">
+
+<pre  class="src src-javascript">            })
+          }.bind(<span style="color: #00006DE06DE0;">this</span>))
+        }
+      })
+    })
+  }
+})
+</pre>
+</div>
+
+</section>
+</section>
+<section>
+<section id="slide-orgheadline10">
+<h2 id="orgheadline10">Это не функциональный язык</h2>
+<ul>
+<li>разрешены глобальные переменные</li>
+<li>коллекции изменяются</li>
+<li>ФП-стиль лишь поощрается</li>
+
+</ul>
+
+</section>
+</section>
+<section>
+<section id="slide-orgheadline11">
+<h2 id="orgheadline11">Цитаты</h2>
+
+</section>
+</section>
+<section>
+<section id="slide-orgheadline12">
+<h2 id="orgheadline12">Ларри Уолл (Perl)</h2>
+
+<div class="figure">
+<p><img src="http://www.azquotes.com/picture-quotes/quote-take-lisp-you-know-its-the-most-beautiful-language-in-the-world-at-least-up-until-haskell-larry-wall-112-53-85.jpg" alt="quote-take-lisp-you-know-its-the-most-beautiful-language-in-the-world-at-least-up-until-haskell-larry-wall-112-53-85.jpg" />
+</p>
+</div>
+
+</section>
+</section>
+<section>
+<section id="slide-orgheadline13">
+<h2 id="orgheadline13">Столлман (GNU, Emacs)</h2>
+
+<div class="figure">
+<p><img src="http://www.azquotes.com/picture-quotes/quote-the-most-powerful-programming-language-is-lisp-if-you-don-t-know-lisp-or-its-variant-richard-stallman-59-24-54.jpg" alt="quote-the-most-powerful-programming-language-is-lisp-if-you-don-t-know-lisp-or-its-variant-richard-stallman-59-24-54.jpg" />
+</p>
+</div>
+
+</section>
+</section>
+<section>
+<section id="slide-orgheadline14">
+<h2 id="orgheadline14">Alan Kay (Smalltalk, OOP)</h2>
+<ul>
+<li>"Lisp isn't a language, it's a building material."</li>
+<li>"the greatest single programming language ever designed"</li>
+
+</ul>
+
+</section>
+</section>
+<section>
+<section id="slide-orgheadline15">
+<h2 id="orgheadline15">Eric Raymond (Mozilla, Linux)</h2>
+<p>
+"Lisp was far more powerful and flexible than any other language of its day; in fact, it is still a better design than most languages of today, twenty-five years later.
+</p>
+
+</section>
+</section>
+<section>
+<section id="slide-orgheadline16">
+<h2 id="orgheadline16">Philip Greenspun (hacker)</h2>
+<p>
+"SQL, Lisp, and Haskell are the only programming languages that I've seen where one spends more time thinking than typing."
+</p>
+
+</section>
+</section>
+<section>
+<section id="slide-orgheadline17">
+<h2 id="orgheadline17">Повлиял на</h2>
+<p>
+Elixir,  Forth, Haskell, JavaScript, Julia, Logo, Lua, Mathematica, Nim, Perl, Python, R,  Ruby, Scala, Smalltalk, Tcl
+</p>
+
+</section>
+</section>
+<section>
+<section id="slide-orgheadline18">
+<h2 id="orgheadline18">DSL для всего</h2>
+<ul>
+<li>вырождается в код предметной области</li>
+<li>"нужно взять стандарт и расставить скобки"</li>
+
+</ul>
+
+</section>
+</section>
+<section>
+<section id="slide-orgheadline19">
+<h2 id="orgheadline19">SQL</h2>
+<div class="org-src-container">
+
+<pre  class="src src-lisp">(select (<span style="color: #b35caf;">:title</span> <span style="color: #b35caf;">:author</span> <span style="color: #b35caf;">:year</span>)
+  (from <span style="color: #b35caf;">:books</span>)
+  (where (<span style="color: #b35caf;">:and</span> (<span style="color: #b35caf;">:&gt;=</span> <span style="color: #b35caf;">:year</span> 1995)
+               (<span style="color: #b35caf;">:&lt;</span> <span style="color: #b35caf;">:year</span> 2010)))
+  (order-by (<span style="color: #b35caf;">:desc</span> <span style="color: #b35caf;">:year</span>)))
+</pre>
+</div>
+
+</section>
+</section>
+<section>
+<section id="slide-orgheadline20">
+<h2 id="orgheadline20">HTML</h2>
+<div class="org-src-container">
+
+<pre  class="src src-clojure">(<span style="color: #0000cd;">defn</span> <span style="color: #ff0000;">simple-component</span> []
+  [<span style="color: #00006DE06DE0;">:div</span>
+   [<span style="color: #00006DE06DE0;">:p</span> <span style="color: #8b008b;">"I am a component!"</span>]
+   [<span style="color: #00006DE06DE0;">:p.someclass</span>
+    <span style="color: #8b008b;">"I have "</span> [<span style="color: #00006DE06DE0;">:strong</span> <span style="color: #8b008b;">"bold"</span>]
+    [<span style="color: #00006DE06DE0;">:span</span> {<span style="color: #00006DE06DE0;">:style</span> {<span style="color: #00006DE06DE0;">:color</span> <span style="color: #8b008b;">"red"</span>}} <span style="color: #8b008b;">" and red "</span>]
+      <span style="color: #8b008b;">"text."</span>]])
+</pre>
+</div>
+
+</section>
+</section>
+<section>
+<section id="slide-orgheadline21">
+<h2 id="orgheadline21">XML</h2>
+<div class="org-src-container">
+
+<pre  class="src src-clojure">(element <span style="color: #00006DE06DE0;">:foo</span> {<span style="color: #00006DE06DE0;">:foo-attr</span> <span style="color: #8b008b;">"foo value"</span>}
+  (element <span style="color: #00006DE06DE0;">:bar</span> {<span style="color: #00006DE06DE0;">:bar-attr</span> <span style="color: #8b008b;">"bar value"</span>}
+    (element <span style="color: #00006DE06DE0;">:baz</span> {} <span style="color: #8b008b;">"The baz value1"</span>)
+    (element <span style="color: #00006DE06DE0;">:baz</span> {} <span style="color: #8b008b;">"The baz value2"</span>)
+    (element <span style="color: #00006DE06DE0;">:baz</span> {} <span style="color: #8b008b;">"The baz value3"</span>)))
+</pre>
+</div>
+
+</section>
+</section>
+<section>
+<section id="slide-orgheadline22">
+<h2 id="orgheadline22">HTTP API</h2>
+<div class="org-src-container">
+
+<pre  class="src src-clojure">(context <span style="color: #8b008b;">"/api"</span> []
+  (<span style="color: #00006DE06DE0;">GET</span> <span style="color: #8b008b;">"/plus"</span> []
+    <span style="color: #00006DE06DE0;">:return</span> {<span style="color: #00006DE06DE0;">:result</span> <span style="color: #228b22;">Long</span>}
+    <span style="color: #00006DE06DE0;">:query-params</span> [x <span style="color: #00006DE06DE0;">:-</span> <span style="color: #228b22;">Long</span>, y <span style="color: #00006DE06DE0;">:-</span> <span style="color: #228b22;">Long</span>]
+    <span style="color: #00006DE06DE0;">:summary</span> <span style="color: #8b008b;">"adds two numbers together"</span>
+    (ok {<span style="color: #00006DE06DE0;">:result</span> (+ x y)}))
+</pre>
+</div>
+
+</section>
+</section>
+<section>
+<section id="slide-orgheadline23">
+<h2 id="orgheadline23">Недостатки</h2>
+<ul>
+<li>невероятная гибкость</li>
+<li>код это дерево</li>
+<li>малый срок жизни кода в Гите</li>
+
+</ul>
+
+</section>
+</section>
+<section>
+<section id="slide-orgheadline24">
+<h2 id="orgheadline24">Три диалекта</h2>
+<ul>
+<li>Common Lisp</li>
+<li>Racket</li>
+<li>Clojure</li>
+
+</ul>
+
+</section>
+</section>
+<section>
+<section id="slide-orgheadline25">
+<h2 id="orgheadline25">Common Lisp</h2>
+<ul>
+<li>объединил множество диалектов в один</li>
+<li>финансировался DARPA</li>
+<li>промышленность и военные нужды</li>
+
+</ul>
+
+</section>
+</section>
+<section>
+<section id="slide-orgheadline26">
+<h2 id="orgheadline26">Racket</h2>
+<ul>
+<li>бывший диалект Scheme</li>
+<li>богатая библиотека</li>
+<li>IDE, GUI, веб-сервер</li>
+<li>на всех платформах</li>
+<li>идеален для обучения</li>
+<li>SICP!</li>
+
+</ul>
+
+</section>
+</section>
+<section>
+<section id="slide-orgheadline27">
+<h2 id="orgheadline27">Clojure</h2>
+<ul>
+<li>Лисп на стероидах</li>
+<li>Компилируется в JVM</li>
+<li>интеграция с java-кодом</li>
+<li>основной диалект</li>
+
+</ul>
+
+</section>
+</section>
+<section>
+<section id="slide-orgheadline28">
+<h2 id="orgheadline28">Немного об авторе</h2>
+<ul>
+<li>Рич Хики, C++, Java</li>
+<li>создал язык за 2 года</li>
+<li>на личные средства и время</li>
+<li>доклады!</li>
+<li>главный критерий &#x2013; простота</li>
+
+</ul>
+
+</section>
+</section>
+<section>
+<section id="slide-orgheadline29">
+<h2 id="orgheadline29">ClojureScript</h2>
+<ul>
+<li>реализация Clojure на Js</li>
+<li>не только в Clojure-проектах</li>
+<li>привязки к React</li>
+<li>одностраничные приложения</li>
+
+</ul>
+
+</section>
+</section>
+<section>
+<section id="slide-orgheadline30">
+<h2 id="orgheadline30">Идеи Лиспа</h2>
+
+</section>
+</section>
+<section>
+<section id="slide-orgheadline31">
+<h2 id="orgheadline31">Function Trees</h2>
+<ul>
+<li>Деревья функций</li>
+<li>Код как структура данных</li>
+
+</ul>
+
+</section>
+</section>
+<section>
+<section id="slide-orgheadline32">
+<h2 id="orgheadline32">Пример</h2>
+<ul>
+<li>структура функций + интерпретатор</li>
+
+</ul>
+<div class="org-src-container">
+
+<pre  class="src src-javascript">[
+  dispatch(AUTHENTICATING),
+  authenticateUser, {
+    error: [
+      dispatch(AUTHENTICATED_ERROR)
+    ],
+    success: [
+      dispatch(AUTHENTICATED_SUCCESS),
+      ...getAssignments
+    ]
+  }
+]
+</pre>
+</div>
+
+</section>
+</section>
+<section>
+<section id="slide-orgheadline33">
+<h2 id="orgheadline33">React.js</h2>
+<ul>
+<li>Интерфейс как дерево компонентов</li>
+<li>Декларативность</li>
+
+</ul>
+
+</section>
+</section>
+<section>
+<section id="slide-orgheadline34">
+<h2 id="orgheadline34">Пример</h2>
+<div class="org-src-container">
+
+<pre  class="src src-javascript"><span style="color: #0000cd;">class</span> ShoppingList <span style="color: #0000cd;">extends</span> React.Component {
+  render() {
+    <span style="color: #0000cd;">return</span> (
+      &lt;div className=<span style="color: #8b008b;">"shopping-list"</span>&gt;
+        &lt;h1&gt;Shopping List <span style="color: #0000cd;">for</span> {<span style="color: #00006DE06DE0;">this</span>.props.name}&lt;/h1&gt;
+        &lt;ButtonWidget&gt;
+        &lt;ul&gt;
+          &lt;li&gt;Instagram&lt;/li&gt;
+          &lt;li&gt;WhatsApp&lt;/li&gt;
+          &lt;li&gt;Oculus&lt;/li&gt;
+</pre>
+</div>
+
+</section>
+</section>
+<section>
+<section id="slide-orgheadline35">
+<h2 id="orgheadline35">React bindings</h2>
+<ul>
+<li>Om</li>
+<li>Reagent</li>
+<li>Rum</li>
+<li>Re-frame</li>
+
+</ul>
+
+</section>
+</section>
+<section>
+<section id="slide-orgheadline36">
+<h2 id="orgheadline36">Где используется?</h2>
+<ul>
+<li>Космос, военщина</li>
+<li>Заводы</li>
+
+</ul>
+
+</section>
+</section>
+<section>
+<section id="slide-orgheadline37">
+<h2 id="orgheadline37">Grammarly</h2>
+<ul>
+<li>сервис проверки правописания</li>
+
+</ul>
+
+</section>
+</section>
+<section>
+<section id="slide-orgheadline38">
+<h2 id="orgheadline38">NaughtyDog</h2>
+<ul>
+<li>вся серия игр на PlayStation</li>
+<li>выборочно на PC</li>
+
+</ul>
+
+<div class="figure">
+<p><img src="http://s.emuparadise.org/fup/up/36716-Crash_Bandicoot_%5BU%5D-1.png" alt="36716-Crash_Bandicoot_%5BU%5D-1.png" />
+</p>
+</div>
+
+</section>
+</section>
+<section>
+<section id="slide-orgheadline39">
+<h2 id="orgheadline39">CAD systems</h2>
+<ul>
+<li>AutoCAD</li>
+<li>AutoLisp</li>
+<li>Autodesk</li>
+
+</ul>
+
+</section>
+</section>
+<section>
+<section id="slide-orgheadline40">
+<h2 id="orgheadline40">Emacs</h2>
+<ul>
+<li>Развивается 40+ лет</li>
+<li>IDE, почтовый клиент</li>
+<li>работа с документами</li>
+<li>запуск процессов</li>
+
+</ul>
+
+</section>
+</section>
+<section>
+<section id="slide-orgheadline41">
+<h2 id="orgheadline41">Крупный бизнес</h2>
+<ul>
+<li>Wallmart</li>
+<li>Ebay</li>
+<li>BBC</li>
+
+</ul>
+
+</section>
+</section>
+<section>
+<section id="slide-orgheadline42">
+<h2 id="orgheadline42">Крупный бизнес</h2>
+<ul>
+<li>Amazon</li>
+<li>Verizon</li>
+<li>Y Combinator (Arc)</li>
+
+</ul>
+
+</section>
+</section>
+<section>
+<section id="slide-orgheadline43">
+<h2 id="orgheadline43">John Carmack</h2>
+<p>
+I just dumped the C++ server I wrote last year for a new one in Racket. May not scale, but it is winning for development even as a newbie.
+</p>
+
+<p>
+John Carmack working on Scheme as a VR scripting language
+</p>
+
+</section>
+</section>
+<section>
+<section id="slide-orgheadline44">
+<h2 id="orgheadline44">Мощь Лиспа</h2>
+
+</section>
+</section>
+<section>
+<section id="slide-orgheadline45">
+<h2 id="orgheadline45">Код как данные</h2>
+<ul>
+<li>код &#x2013; дерево списков</li>
+<li>макросы получают код как список</li>
+<li>и возвращают список как будущий код</li>
+<li>собственный синтаксис</li>
+
+</ul>
+
+</section>
+</section>
+<section>
+<section id="slide-orgheadline46">
+<h2 id="orgheadline46">Код как данные</h2>
+<div class="org-src-container">
+
+<pre  class="src src-lisp">(expr 1 + 2 * (3 + 100) / 42)
+[1, +, 2, *, (, 3, +, 100, ), /, 42, ]
+[+, 1, (, /, (, *, 2, (, +, 3, 100,), ), 42, ), ), ]
+(+ 1 (/ (* 2 (+ 3 100)) 42)))
+</pre>
+</div>
+
+</section>
+</section>
+<section>
+<section id="slide-orgheadline47">
+<h2 id="orgheadline47">Правила чтения кода</h2>
+
+</section>
+</section>
+<section>
+<section id="slide-orgheadline48">
+<h2 id="orgheadline48">Читаем JSON</h2>
+<div class="org-src-container">
+
+<pre  class="src src-lisp">&gt; [1, 2, <span style="color: #8b008b;">"foo"</span>]
+#(1 2 <span style="color: #8b008b;">"foo"</span>)
+
+&gt; { <span style="color: #8b008b;">"foo"</span>: 1, <span style="color: #8b008b;">"bar"</span>: 2 }
+#&lt;HASH-TABLE <span style="color: #b35caf;">:TEST</span> EQUAL <span style="color: #b35caf;">:COUNT</span> 2 {1004EA5DD3}&gt;
+</pre>
+</div>
+
+</section>
+</section>
+<section>
+<section id="slide-orgheadline49">
+<h2 id="orgheadline49">Хеш-таблицы и векторы</h2>
+<div class="org-src-container">
+
+<pre  class="src src-lisp">&gt; [1 2 <span style="color: #8b008b;">"foo"</span>]
+#(1 2 <span style="color: #8b008b;">"foo"</span>)
+
+&gt; {:foo 1 <span style="color: #b35caf;">:bar</span> 2}
+#&lt;HASH-TABLE <span style="color: #b35caf;">:TEST</span> EQUAL <span style="color: #b35caf;">:COUNT</span> 2 {1004EA5DD3}&gt;
+</pre>
+</div>
+
+</section>
+</section>
+<section>
+<section id="slide-orgheadline50">
+<h2 id="orgheadline50">Саморасширяемость</h2>
+<ul>
+<li>свое ООП (CLOS)</li>
+<li>свои исключения (slingshot)</li>
+<li>дженерики, матчинг, &#x2026;</li>
+
+</ul>
+
+</section>
+</section>
+<section>
+<section id="slide-orgheadline51">
+<h2 id="orgheadline51">Было</h2>
+<ul>
+<li>стандартные исключения Джавы</li>
+
+</ul>
+<div class="org-src-container">
+
+<pre  class="src src-clojure">(<span style="color: #0000cd;">throw</span> (<span style="color: #228b22;">Exception.</span> <span style="color: #8b008b;">"my exception message"</span>))
+...
+(<span style="color: #0000cd;">catch</span> <span style="color: #228b22;">SQLException</span> se (prn (<span style="color: #b35caf;">.getNextException</span> e)))
+(<span style="color: #0000cd;">catch</span> <span style="color: #228b22;">Exception2</span> e (prn <span style="color: #8b008b;">"Handle generic exception"</span>))
+</pre>
+</div>
+
+</section>
+</section>
+<section>
+<section id="slide-orgheadline52">
+<h2 id="orgheadline52">Стало</h2>
+<ul>
+<li>кидаем и ловим что угодно!</li>
+
+</ul>
+<div class="org-src-container">
+
+<pre  class="src src-clojure">(throw+ {<span style="color: #00006DE06DE0;">:type</span> <span style="color: #00006DE06DE0;">::bad-tree</span> <span style="color: #00006DE06DE0;">:tree</span> tree <span style="color: #00006DE06DE0;">:hint</span> hint})
+...
+(<span style="color: #0000cd;">catch</span> [<span style="color: #00006DE06DE0;">:type</span> <span style="color: #00006DE06DE0;">:</span><span style="color: #228b22;">tensor.parse</span><span style="color: #000000; background-color: #add8e6;">/</span><span style="color: #00006DE06DE0;">bad-tree</span>]
+       {<span style="color: #00006DE06DE0;">:keys</span> [tree hint]}
+  (<span style="color: #228b22;">log</span><span style="color: #000000; background-color: #add8e6;">/</span>error <span style="color: #8b008b;">"failed to parse"</span> tree <span style="color: #8b008b;">"with hint"</span> hint)
+</pre>
+</div>
+
+</section>
+</section>
+<section>
+<section id="slide-orgheadline53">
+<h2 id="orgheadline53">REPL</h2>
+<ul>
+<li>Read, Eval, Print, Loop</li>
+<li>интерактивная разработка</li>
+<li>горячая замена кода</li>
+<li>исполнение кода из редактора</li>
+<li>удаленная отладка</li>
+
+</ul>
+
+</section>
+</section>
+<section>
+<section id="slide-orgheadline54">
+<h2 id="orgheadline54">Навигация</h2>
+<ul>
+<li>код это дерево</li>
+<li>переходы вглубь, наверх,</li>
+<li>по текущему уровню</li>
+<li>сдвиги форм</li>
+<li>слияние, деление, удаление форм</li>
+
+</ul>
+
+</section>
+</section>
+<section>
+<section id="slide-orgheadline55">
+<h2 id="orgheadline55">Вакансии?</h2>
+
+</section>
+</section>
+<section>
+<section id="slide-orgheadline56">
+<h2 id="orgheadline56">Классические диалекты (CL, Racket)</h2>
+<ul>
+<li>встречаются редко</li>
+<li>не бывают удаленными</li>
+<li>большая ответственность</li>
+
+</ul>
+
+</section>
+</section>
+<section>
+<section id="slide-orgheadline57">
+<h2 id="orgheadline57">Clojure(Script)</h2>
+<ul>
+<li>много в США</li>
+<li>попадается в Европе и Африке</li>
+<li>до России еще не дошло</li>
+
+</ul>
+
+</section>
+</section>
+<section>
+<section id="slide-orgheadline58">
+<h2 id="orgheadline58">Где искать</h2>
+
+</section>
+</section>
+<section>
+<section id="slide-orgheadline59">
+<h2 id="orgheadline59">Специальные доски</h2>
+<ul>
+<li>Functionals Works</li>
+<li>Functional Jobs</li>
+<li>Lisp Jobs</li>
+
+</ul>
+
+</section>
+</section>
+<section>
+<section id="slide-orgheadline60">
+<h2 id="orgheadline60">Сообщества</h2>
+<ul>
+<li>рассылка lisp-hug@lispworks.com</li>
+<li>группы гугла, например London Clojurian Jobs</li>
+<li>слак clojurians.slack.com</li>
+
+</ul>
+
+</section>
+</section>
+<section>
+<section id="slide-orgheadline61">
+<h2 id="orgheadline61">Вопросы?</h2>
+
+</section>
+</section>
+<section>
+<section id="slide-orgheadline62">
+<h2 id="orgheadline62">Ссылки</h2>
+<ul>
+<li><a href="https://jobs.functionalworks.com/">https://jobs.functionalworks.com/</a></li>
+<li><a href="https://functionaljobs.com/">https://functionaljobs.com/</a></li>
+<li><a href="https://lispjobs.wordpress.com/">https://lispjobs.wordpress.com/</a></li>
+<li><a href="http://clojurescript.net/">http://clojurescript.net/</a></li>
+<li><a href="http://clojure.org/">http://clojure.org/</a></li>
+<li><a href="http://lisp-lang.org/">http://lisp-lang.org/</a></li>
+<li><a href="https://groups.google.com/forum/#!msg/racket-users/RFlh0o6l3Ls/8InN7uz-Mv4J">https://groups.google.com/forum/#!msg/racket-users/RFlh0o6l3Ls/8InN7uz-Mv4J</a></li>
+<li><a href="https://twitter.com/ID_AA_Carmack/status/577877590070919168">https://twitter.com/ID_AA_Carmack/status/577877590070919168</a></li>
+
+</ul>
+</section>
+</section>
+</div>
+</div>
+<script src="http://grishaev.me/talks/lib/js/head.min.js"></script>
+<script src="http://grishaev.me/talks/js/reveal.js"></script>
+
+<script>
+// Full list of configuration options available here:
+// https://github.com/hakimel/reveal.js#configuration
+Reveal.initialize({
+
+controls: true,
+progress: true,
+history: false,
+center: true,
+slideNumber: false,
+rollingLinks: false,
+keyboard: true,
+overview: true,
+
+theme: Reveal.getQueryHash().theme, // available themes are in /css/theme
+transition: Reveal.getQueryHash().transition || 'none', // default/cube/page/concave/zoom/linear/fade/none
+transitionSpeed: 'default',
+multiplex: {
+    secret: '', // null if client
+    id: '', // id, obtained from socket.io server
+    url: '' // Location of socket.io server
+},
+
+// Optional libraries used to extend on reveal.js
+dependencies: [
+ { src: 'http://grishaev.me/talks/lib/js/classList.js', condition: function() { return !document.body.classList; } },
+ { src: 'http://grishaev.me/talks/plugin/markdown/marked.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
+ { src: 'http://grishaev.me/talks/plugin/markdown/markdown.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
+ { src: 'http://grishaev.me/talks/plugin/zoom-js/zoom.js', async: true, condition: function() { return !!document.body.classList; } },
+ { src: 'http://grishaev.me/talks/plugin/notes/notes.js', async: true, condition: function() { return !!document.body.classList; } }]
+});
+</script>
+</body>
+</html>
