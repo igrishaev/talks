@@ -29,7 +29,6 @@ https://postgrespro.ru/docs/postgresql/15/protocol
 
 
 
-
 Общие сведения
 
 кто использует
@@ -43,3 +42,23 @@ Sync data from any Postgres DB to another
 https://schemamap.io/
 
 и другие
+
+
+
+
+Postgres Wire Protocol
+
+Глава 55. Клиент-серверный протокол
+https://postgrespro.ru/docs/postgresql/15/protocol
+
+
+
+
+┌─────┬──────────┬───────────────────────────────────────┐
+│ tag │  length  │             byte payload              │
+└─────┴──────────┴───────────────────────────────────────┘
+
+
+┌─────┬─────────────┬───────────────────────────────────────┐
+│ Q   │  4 + 31 + 1 │ select from users where id = 42\0     │
+└─────┴─────────────┴───────────────────────────────────────┘
