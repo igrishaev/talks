@@ -1,4 +1,49 @@
 
+# PG2
+
+# Общие сведения
+
+- наследник PG(one)
+- c 2022
+- на Clojure
+- медленно (2-3 раза)
+- на Java быстрее
+
+- что значит быстрее?
+- не быстрее PG JDBC, но быстрее next.jdbc
+
+next.jdbc = Java JDBC + Clojure API
+быстрее кложурной обвязки
+
+
+## Кто пользуется?
+
+XTDB для тестов Wire Protocol (позже)
+https://github.com/xtdb/xtdb/pull/3857
+
+
+Sync data from any Postgres DB to another
+https://schemamap.io/
+
+и другие (но мало)
+
+сам -- нет, но надеюсь
+
+
+## О чем презентация
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 # PG2: A Fast PostgreSQL Driver For Clojure
 
@@ -9,9 +54,23 @@ https://github.com/igrishaev/pg
 
 PG(one) на Clojure
 
-драйвер или клиент
+# Драйвер или клиент?
 
-о чем
+ ┌────┐    ┌───────────┐    ┌─────┐
+ │ Да │    │           │    │ Нет │
+ └────┼────│   JDBC?   │────┼─────┘
+      │    │           │    │
+      │    └───────────┘    │
+      ▼                     ▼
+┌───────────┐         ┌───────────┐
+│           │         │           │
+│  Драйвер  │         │  Клиент   │
+│           │         │           │
+└───────────┘         └───────────┘
+
+
+# О чем
+
  специфика (дата-время)
  сам -- нет (но надеюсь)
 
@@ -32,17 +91,6 @@ https://postgrespro.ru/docs/postgresql/15/protocol
 
 Общие сведения
 
-кто использует
-
-XTDB
-https://github.com/xtdb/xtdb/pull/3857
-https://github.com/xtdb/xtdb/pull/3857/commits/f837cbd5e5b97920970d88dd931a7b2e9c9b09c7
-
-
-Sync data from any Postgres DB to another
-https://schemamap.io/
-
-и другие
 
 
 
@@ -200,3 +248,16 @@ DataRow
 ##
 ##
 ##
+
+
+
+Table of Content
+
+PG2
+- pg(one)
+-
+
+
+зачем?
+- интересно
+-
