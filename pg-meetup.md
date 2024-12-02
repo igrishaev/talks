@@ -280,6 +280,100 @@ create enum color as (red, blue, green)
 # ^^^^^^^
 
 
+Text vs Binary format
+---------------------
+
+- Postgres передает данные в двух форматах
+- Выбирает клиент
+- с точностью до поля
+
+Что это значит -- таблица TODO с типами TXT/BIN
+
+- когда малые значения -- расход трафика
+- когда большие значения -- экономия трафика
+
+- бинарный формат: удобней парсить (нет вариативности)
+
+примеры (массив, даты)
+
+PG EPOCH OFFSET
+
+строки с null-окончанием, неудобно парсить
+
+примеры с датами, форматы
+numeric type (ссылка на JDBC)
+нагромождение кода
+
+
+
+
+
+Заказ формата
+-----------
+
+Bind: передать параметры запросу
+
+-> select * from users where name = $1 and age = $2
+<- ps1
+
+
+  Bind ps1, ivan, 66
+# ^^^^
+
+~~~
+[F][PAYLOAD][F][PAYLOAD]
+|----------||----------|
+    ivan         66
+~~~
+
+
+Text params
+~~~
+1 4 ivan   1 2 66
+~~~
+
+Binary params
+
+~~~
+0 4 ivan   0 4 0 0 0 66
+~~~
+
+
+Columns
+
+0
+1
+0 1 1 ...
+│ │ │
+│ │ └─ age
+│ └─ email
+└─ id
+
+  RowDescription
+# ^^^^^^^^^^^^^^
+
+id    int4  0
+email text  1
+age   int4  1
+
+              id  email  age
+ <- DataRow   bin text   text
+ <- DataRow   bin text   text
+ <- DataRow   bin text   text
+
+(как правило -- все сразу)
+
+node-pg только текст
+
+опции PG
+{
+ :binary-encode? false
+ :binary-decode? false
+}
+
+## Кодирование
+
+
 
 
 
