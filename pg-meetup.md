@@ -32,6 +32,252 @@ https://schemamap.io/
 
 ## О чем презентация
 
+- о специфике
+- Postgres Wire Protocol
+- зачем браться за свое решение
+- парсинг текстовых и бинарных данных
+- сопоставление типов
+- дизайн и API
+
+
+## Demo time!
+
+- получить соединение
+- простой запрос
+- разные типы полей (дата, время, json)
+- транзакция (вложенная)
+- copy-in/out
+- SSL с сертификатом
+- массивы
+- отладочный лог
+- ?
+
+## Postgres Wire Protocol
+
+1. подключаемся к соекту
+2. передаем сообщение
+3. читаем сообщение
+4. все!
+
+Глава 55. Клиент-серверный протокол
+https://postgrespro.ru/docs/postgresql/15/protocol
+
+Сообщения
+
+┌─────┬──────────┬───────────────────────────────────────┐
+│ tag │  length  │             byte payload              │
+└─────┴──────────┴───────────────────────────────────────┘
+
+- отправка
+- чтение до какого-то условия
+- отправка
+
+пример Query
+
+Для парсинга `java.nio.Bytebuffer`
+забирать все
+пример
+
+
+## Первичный обмен сообщениями (Startup)
+
+ -> StartupMessage
+<-  AuthenticationResponse(code)
+
+TODO
+
+
+- типов сообщений много
+- Startup phase is slow (новое соединение на каждый запрос)
+- Auth Scram SHA: 4096 XOR-итераций (с версии 15)
+
+## Дальнейший обмен сообщениями
+
+ -> Query
+
+TODO
+
+## Зачем?
+
+- интересно
+# ^^^^^^^^^
+- задействовать Postgres по максимуму
+- JDBC -- общий знаменатель (угодить всем)
+
+1. JSON           нет
+2. COPY API       CopyManager
+3. Date & Time    java.sql.Timestamp
+4. SSL            keystore
+
+Хочу:
+
+1. JSON           да
+2. COPY API       functions
+3. Date & Time    java.time.*
+4. SSL            параметр
+
++ не настраивать это в каждом проекте
+
+## Дизайн и API
+
+- где API лучше
+- отталкиваться от задач
+
+## Я не одинок
+
+- postgres-async-driver
+https://github.com/alaisi/postgres-async-driver (java)
+https://github.com/alaisi/postgres.async        (clojure)
+
+- VertX stack
+Reactive PostgreSQL Client
+https://vertx.io/docs/vertx-pg-client/java/
+
+Rust Postgres
+https://github.com/sfackler/rust-postgres
+
+
+
+# Специфика
+
+## Query vs Execute
+
+  Query -- выполнить одно и более выражений без параметров
+#                    ^^^^^^^^^^^^           ^^^^^^^^^^^^^^
+Execute -- выполнить одно выражение с параметарми
+#                    ^^^^           ^^^^^^^^^^^^^
+
+Query
+-----
+
+conn.query(...)
+
+ -> Query            select * from users where email ilike 'gmail.com'
+<-  RowDescription   id(int), email(text), age(int)
+<-  DataRow          1, kek@gmail.com, 42
+<-  DataRow          2, lol@gmail.com, 23
+<-  DataRow          3, foo@gmail.com, 88
+<-  CommandComplete  SELECT 3
+<-  ReadyForQuery    I
+
+- работает давно
+- данные в текстовом виде (чуть позже)
+- несколько выражений в одном запросе
+
+~~~sql
+select * from users where email ilike 'gmail.com';
+select * from orders where sku = 'ABC-123';
+~~~
+
+ -> Query               .......
+
+<-  RowDescription      id(int), email(text), age(int)
+<-  DataRow
+<-  DataRow
+<-  DataRow
+<-  CommandComplete     SELECT 3
+
+<-  RowDescription      sku(text), title(text), created_at(timestamp)
+<-  DataRow
+<-  DataRow
+<-  DataRow
+<-  CommandComplete     SELECT 42
+
+<-  ReadyForQuery    I
+
+Exploits of a Mom
+https://xkcd.com/327/
+
+
+"select * from students where name = '" + $user + "'"
+
+"select * from students where name = '" + "ivan" + "'"
+
+select * from students where name = 'ivan'
+
+Robert'; drop table students;--
+
+select * from students where name = 'Robert'; drop table students;--'
+
+1. select * from students where name = 'Robert';
+2. drop table students;
+3. --'
+
+=====================
+NEVER: str, format, +
+=====================
+
+Execute
+-------
+
+conn.execute(...)
+
+Расширенный протокол: выполнить с параметрами
+
+Execute = Parse + Describe + Bind + Execute + Sync + Flush + Close
+
+ -> Parse                 select * from users where name = $1, ps1
+<-  ParseComplete
+<-  Describe              ps1
+<-  ParameterDescription  (text)
+ -> Bind                  "Robert", prt1
+<-  BindComplete
+ -> Execute               prt1, 100
+ -> Sync
+ -> Flush
+
+<-  RowDescription
+<-  DataRow
+<-  DataRow
+    ...
+<-  CommandComplete       SELECT 100
+<-  ReadyForQuery         I
+
+ -> Close                 prt01
+ -> Close                 ps1
+ -> Sync
+ -> Flush
+<-  CloseComplete
+<-  CloseComplete
+<-  ReadyForQuery         I
+
+  Итого
+# ^^^^^
+
+- 8-10 сообщений до того, как получили данные
+- только один запрос
+- безопасно в плане инъекций (кавычки, дефисы)
+- кэш подготовленных выражений!
+
+JDBC - скрытый кэш
+
+{SQL -> PSid}
+
+{select * from users where name = $1  -> ps5131}
+
+parse, describe ...
+
+bind(ps5131 + Ivan)
+bind(ps5131 + Huan)
+
+
+  Query подходит для миграций и DDL
+# ^^^^^
+
+~~~sql
+# V001_initial.sql
+
+create table users (....);
+
+create index ...
+
+create enum color as (red, blue, green)
+~~~
+
+(pg/query conn (slurp "V001_initial.sql"))
+
+  Execute -- для чтения и записи таблиц
+# ^^^^^^^
 
 
 
