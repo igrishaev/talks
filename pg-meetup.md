@@ -733,8 +733,8 @@ DataRow
                          └ ─ ─ ─ ─ ─ ─ ─ ─ ┴ ─ ─ ─ ─ ─ ─ ─ ─ ┘
 
 
-
-
+next.jdbc: mapify
+https://github.com/seancorfield/next-jdbc/blob/develop/src/next/jdbc/result_set.clj#L479
 
 
 
