@@ -567,29 +567,136 @@ typname        | triple
 typnamespace   | 2200
 typowner       | 16384
 typlen         | -1
-typbyval       | f
-typtype        | c
-typcategory    | C
-typispreferred | f
-typisdefined   | t
-typdelim       | ,
-typrelid       | 24585
-typsubscript   | -
-typelem        | 0
-typarray       | 24586
-typinput       | record_in
-typoutput      | record_out
-typreceive     | record_recv
-typsend        | record_send
-typmodin       | -
-typmodout      | -
-typanalyze     | -
-typalign       | d
-typstorage     | x
-typnotnull     | f
-typbasetype    | 0
-typtypmod      | -1
+...
 
+неправильно (один к одному):
+-
+oid -> java
+java -> oid
+
+
+правильно (пары):
+-
+
+[oid, java] -> encode
+
+[jsonb map]     -> json.encode(...)
+[jsonb vector]  -> json.encode(...)
+[jsonb bool]    -> json.encode(...)
+[jsonb nil]     -> nil
+[jsonb string]  -> string
+
+[jsonb [1 2 3]]      -> "[1, 2 ,3]"
+[jsonb false]        -> false
+[jsonb nil]          -> nil
+[jsonb "[1, 2, 3]"]  -> "[1, 2, 3]"
+
+
+[hstore map]     -> Hstore.fromMap(x).toSQL()
+[hstore string]  -> string
+
+[point {:x 1 :y 2}] -> (1, 2)
+[point [1 2]]       -> (1, 2)
+
+TypeProcessors
+--
+
+
+Вот что получилось:
+
+
+~~~
+                                                         methods
+                                                    ┌────────────────┐
+                                                    │    fromMap     │
+                                                    ├────────────────┤
+                            TypeProcessor           │    fromList    │
+      PG OID              ┌────────────────┐    ┌──▶├────────────────┤
+┌────────────────┐        │   encodeBin    │────┘   │   fromString   │
+│      int4      │        ├────────────────┤        ├────────────────┤
+├────────────────┤        │   encodeTxt    │────┐   │      ...       │
+│      int8      │───────▶├────────────────┤    │   └────────────────┘
+├────────────────┤        │   decodeBin    │    │
+│      text      │        ├────────────────┤    │
+└────────────────┘        │   decodeTxt    │    │   ┌────────────────┐
+                          └────────────────┘    │   │    fromMap     │
+                                                │   ├────────────────┤
+                                                │   │    fromList    │
+                                                └───▶────────────────┤
+                                                    │   fromString   │
+                                                    ├────────────────┤
+                                                    │      ...       │
+                                                    └────────────────┘
+~~~
+
+- сложно, громоздко
++ можно передать свои типы
+
+10234  ->  PGVectorProcessor
+
+pgvector -> типы по запросу
+
+oid? 1001, 100123, 514123
+
+{:type-map {"public.vector" Processor}}
+
+{:type-map {:public/vector VectorProcessor
+            :public/sparsevec SparseVectorProcessor}}
+
+
+~~~sql
+select pg_type.oid, pg_namespace.nspname || '.' || pg_type.typname as type
+from pg_type, pg_namespace
+where
+    pg_type.typnamespace = pg_namespace.oid
+and pg_namespace.nspname || '.' || pg_type.typname in (
+  'public.vector', 'public.sparsevec'
+)
+~~~
+
+123151 | public.vector
+123153 | public.sparsevec
+
+
+
+{:public/vector VectorProcessor
+ :public/sparsevec SparseVectorProcessor}
+
++
+
+{public.vector 123151
+ public.sparsevec 123153}
+
+=
+
+{123151 VectorProcessor
+ 123153 SparseVectorProcessor}
+
+
+Зачем схема?
+
+# Enums
+
+create schema foo;
+create schema bar;
+
+create type foo.color as enum (red, green blue);
+create type bar.color as enum (C, M, Y, K);
+
+foo.color = 51233
+bar.color = 13139
+
+
+{:enums [foo.color, bar.color]}
+
+->
+
+{foo.color -> EnumProcessor
+ bar.color -> EnumProcessor}
+
+
+Парсинг
+-------
 
 
 
