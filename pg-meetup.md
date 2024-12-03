@@ -698,6 +698,44 @@ bar.color = 13139
 Парсинг
 -------
 
+ -> Query            select * from users where email ilike 'gmail.com'
+<-  RowDescription   id(int), email(text), age(int)
+<-  DataRow          1, kek@gmail.com, 42
+<-  DataRow          2, lol@gmail.com, 23
+<-  DataRow          3, foo@gmail.com, 88
+<-  CommandComplete  SELECT 3
+<-  ReadyForQuery    I
+
+
+RowDescription
+
+┌─────┬──────────┬───────┬───────┬─────────┬────────────┬─────────┬─────────┬─────────┬─────────┐
+│  T  │  length  │ N-col │ name  │table OID│ column OID │type OID │type size│type mod │ format  │
+└─────┴──────────┴───────┼───────┴─────────┴────────────┴─────────┴─────────┴─────────┴─────────┘
+                                                         field 1                                │
+                         └ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─
+                         ┌───────┬─────────┬────────────┬─────────┬─────────┬─────────┬─────────┐
+                         │ name  │table OID│ column OID │type OID │type size│type mod │ format  │
+                         ├───────┴─────────┴────────────┴─────────┴─────────┴─────────┴─────────┘
+                                                         field 2                                │
+                         └ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─
+
+
+format: 0=bin, 1=txt
+
+
+DataRow
+
+┌─────┬──────────┬───────┬───────┬─────────┬───────┬─────────┬───────┐
+│  B  │  length  │ N-col │  len  │  bytes  │  len  │  bytes  │  ...  │
+└─────┴──────────┴───────┼───────┴─────────┼───────┴─────────┼───────┘
+                               field 1           field 2
+                         └ ─ ─ ─ ─ ─ ─ ─ ─ ┴ ─ ─ ─ ─ ─ ─ ─ ─ ┘
+
+
+
+
+
 
 
 
