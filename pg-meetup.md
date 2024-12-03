@@ -16,6 +16,9 @@ next.jdbc = Java JDBC + Clojure API
 быстрее кложурной обвязки
 
 
+# Драйвер или клиент?
+
+
 ## Кто пользуется?
 
 XTDB для тестов Wire Protocol (позже)
@@ -371,7 +374,224 @@ node-pg только текст
  :binary-decode? false
 }
 
-## Кодирование
+## (Де)кодирование
+
+- записать         txt
+              x
+- прочитать        bin
+
+
+int4
+----
+
+|        | txt                    | bin         |
+|--------|------------------------|-------------|
+| decode | Integer.parseInteger() | bb.getInt() |
+| encode | Integer.toString()     | bb.putInt() |
+
+
+float4
+------
+
+|        | txt                | bin           |
+|--------|--------------------|---------------|
+| decode | Float.parseFLoat() | bb.getFloat() |
+| encode | Float.toString()   | bb.putFloat() |
+
+
+тип -> 4 операции
+
+int2, int4, int8, float4, float8, bool, text...
+
+  сложные типы -- коллекция примитивов
+# ^^^^^^^^^^^^
+
+polygon ((1.0,2.0),(3.0,4.0),(5.3,6.2))
+
+[N, double1, double2, double3, double4...]
+
+
+[1 0 0 0 2 63 -16 0 0 0 0 0 0 64 0 0 0 0 0 0 0 64 8 0 0 0 0 0 0 64 16 0 0 0 0 0 0]
+
+wtf?
+
+[1                    bool    closed?
+ 0 0 0 2              int     N of points
+ 63 -16 0 0 0 0 0 0   double  x1
+ 64   0 0 0 0 0 0 0   double  y1
+ 64   8 0 0 0 0 0 0   double  x2
+ 64  16 0 0 0 0 0 0   double  y2
+ ]
+
+Если непонятно?
+
+- смотреть исходник
+- pg_type
+
+~~~sql
+select
+    oid, typname, typinput, typoutput, typreceive, typsend
+from
+    pg_type
+where
+    oid = 25
+~~~
+
+-[ RECORD 1 ]--------
+oid        | 25
+typname    | text
+typinput   | textin
+typoutput  | textout
+typreceive | textrecv
+typsend    | textsend
+
+pg-vector
+
+sparsevec_send
+
+https://github.com/pgvector/pgvector/blob/5bc7937715c67add21c8bcc0d4284162c7a0174f/src/sparsevec.c#L546
+
+
+* Сопоставление типов *
+-----------------------
+
+- таблица pg_types
+- откуда?
+
+посевочный файл
+https://raw.githubusercontent.com/postgres/postgres/master/src/include/catalog/pg_type.dat
+
+парсер и генератор
+https://github.com/igrishaev/pg/blob/6146b4f32f04e6d48f0ea47acb58366ba66991f2/pg-common/tasks/fetch_oids.clj
+
+результат
+https://github.com/igrishaev/pg/blob/6146b4f32f04e6d48f0ea47acb58366ba66991f2/pg-common/src/pg/oid.clj
+
+тип pg -- это oid
+
+pg
+int4, int2, text, bool, float4, ....
+23    21    25    16    700
+
+
+java
+Integer, Long, String, Float, ...
+
+# примитивы
+
+int4   <--->  Integer
+int8   <--->  Long
+text   <--->  String
+bool   <--->  Boolean
+
+# расширенные
+
+                ???
+                java.sql.Timestamp? :(
+
+timestamptz     java.time.OffsetDateTime
+timestamp       java.time.LocalDateTime
+time            java.time.Time
+timetz          java.time.OffsetTime
+date            java.time.LocalDate
+
+# сложные
+
+json            ?
+hstore          ?
+polygon         ?
+line            ?
+
+
+json --> {}
+{} --> json ?
+
+hstore --> ?
+? --> hstore?
+
+polygon --> []
+[] --> polygon?
+
+int4[] <-- [1 2 3]
+
+1. маппинг -- это сложно
+---------------------
+
+
+2. расширяемость
+----------------
+
+<- RowDescription id(int4), email(text), created_at(timestamptz)
+
+switch oid {
+    case int4: parseInt(payload);
+    case text: parseText(payload);
+    case timestamptz: parseTimestamp(payload);
+    ...
+}
+
+проблемы:
+- нерасширяемость
+- свои типы
+
+расширения, которые создают типы
+- hstore
+- pg_vector
+- postgis
+
+OID случайный!
+
+Свои типы:
+
+  CREATE TYPE triple AS (id int4, email text, created_at timestamp);
+# ^^^^^^^^^^^               ^^^^        ^^^^             ^^^^^^^^^
+
+CREATE TABLE test (id int, data triple);
+
+INSERT INTO test (id, data) VALUES (1, '(100,test@test.com,2024-12-03 12:15:54.987685+03)');
+
+SELECT * from test;
+
+-[ RECORD 1 ]------------------------------------------
+id   | 1
+data | (100,test@test.com,"2024-12-03 12:15:54.987685")
+
+
+select * from pg_type where typname = 'triple';
+
+
+-[ RECORD 1 ]--+------------
+oid            | 24587
+typname        | triple
+#                ^^^^^^
+typnamespace   | 2200
+typowner       | 16384
+typlen         | -1
+typbyval       | f
+typtype        | c
+typcategory    | C
+typispreferred | f
+typisdefined   | t
+typdelim       | ,
+typrelid       | 24585
+typsubscript   | -
+typelem        | 0
+typarray       | 24586
+typinput       | record_in
+typoutput      | record_out
+typreceive     | record_recv
+typsend        | record_send
+typmodin       | -
+typmodout      | -
+typanalyze     | -
+typalign       | d
+typstorage     | x
+typnotnull     | f
+typbasetype    | 0
+typtypmod      | -1
+
+
+
 
 
 
