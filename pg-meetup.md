@@ -1,9 +1,11 @@
 
 # PG2
 
+https://github.com/igrishaev/pg2
+
 # Общие сведения
 
-- наследник PG(one)
+- наследник PG(one) https://github.com/igrishaev/pg
 - c 2022
 - на Clojure
 - медленно (2-3 раза)
@@ -12,17 +14,30 @@
 - что значит быстрее?
 - не быстрее PG JDBC, но быстрее next.jdbc
 
-next.jdbc = Java JDBC + Clojure API
+next.jdbc = Java JDBC + pgjdbc + Clojure API
+https://github.com/pgjdbc/pgjdbc
+
 быстрее кложурной обвязки
 
 
 # Драйвер или клиент?
 
+- драйвер: для JDBC
+
+JDBC -- абстрактный API
+
+- Python PEP 249 – Python Database API Specification v2.0
+- клиент: когда свое (pg2)
+
+
+
 
 ## Кто пользуется?
 
+Clojars: 7500 загрузок
+
 XTDB для тестов Wire Protocol (позже)
-https://github.com/xtdb/xtdb/pull/3857
+https://github.com/xtdb/xtdb/pull/3857/files
 
 
 Sync data from any Postgres DB to another
@@ -30,12 +45,20 @@ https://schemamap.io/
 
 и другие (но мало)
 
-сам -- нет, но надеюсь
+  сам -- нет, но надеюсь
+# ^^^^^^^^^^
+
+
+
+
+
+
+
 
 
 ## О чем презентация
 
-- о специфике
+- Demo
 - Postgres Wire Protocol
 - зачем браться за свое решение
 - парсинг текстовых и бинарных данных
@@ -43,7 +66,11 @@ https://schemamap.io/
 - дизайн и API
 
 
+
+
 ## Demo time!
+
+TODO demo
 
 - получить соединение
 - простой запрос
@@ -55,9 +82,13 @@ https://schemamap.io/
 - отладочный лог
 - ?
 
+
+
+
+
 ## Postgres Wire Protocol
 
-1. подключаемся к соекту
+1. подключаемся к сокету
 2. передаем сообщение
 3. читаем сообщение
 4. все!
@@ -77,28 +108,92 @@ https://postgrespro.ru/docs/postgresql/15/protocol
 
 пример Query
 
-Для парсинга `java.nio.Bytebuffer`
-забирать все
-пример
+┌─────┬──────────┬───────────────────────────────────────┐
+│ Q   │ 0 0 0 33 │ select * from users where id = 1\0    │
+└─────┴──────────┴───────────────────────────────────────┘
 
+
+~~~java
+InputStream in = socket.getInputStream()
+
+byte tag = in.read()
+int len = in.readInt()
+byte[] buf = new byte[len
+
+in.read(buf)
+
+pair = [tag buf]
+
+switch tag {
+  case 'S' -> ...
+  case 'R' -> ...
+  case 'd' -> ...
+  default: throw "msg not supported"
+}
+~~~
+
+Connection.java switch
+https://github.com/igrishaev/pg2/blob/master/pg-core/src/java/org/pg/Connection.java#L497
+
+
+Для парсинга `java.nio.Bytebuffer`
+- забирать все
+
+- типов сообщений много
 
 ## Первичный обмен сообщениями (Startup)
 
- -> StartupMessage
-<-  AuthenticationResponse(code)
+~~~clojure
+ <- StartupMessage[protocolVersion=196608, user=test, database=test, options={application_name=pg2, client_encoding=UTF8}]
 
-TODO
+ -> AuthenticationSASL[SASLTypes=[SCRAM_SHA_256]]
+ <- SASLInitialResponse[saslType=SCRAM_SHA_256, clientFirstMessage=n,,n=test,r=81f91ead-f29d-452c-a927-d9f53bd75e4c]
+ -> AuthenticationSASLContinue[serverFirstMessage=r=81f91ead-f29d-452c-a927-d9f53bd75e4cF8nnFdUr+KnDOLmcN5/LMeYk,s=xUjJk01c+u6AorZaFYvm2A==,i=4096]
+ <- SASLResponse[clientFinalMessage=c=biws,r=81f91ead-f29d-452c-a927-d9f53bd75e4cF8nnFdUr+KnDOLmcN5/LMeYk,p=5nWW0Ze1GBl9EIL3F1aV9EZnOaSvrywE5JSqqr31tfw=]
+ -> AuthenticationSASLFinal[serverFinalMessage=v=JCxEPArBiwMWSWu9O47KsPF6zYIjoz7j/2hZbdZQwOM=]
+ -> AuthenticationOk[]
+
+ -> ParameterStatus[param=application_name, value=pg2]
+ -> ParameterStatus[param=client_encoding, value=UTF8]
+ -> ParameterStatus[param=DateStyle, value=ISO, MDY]
+ -> ParameterStatus[param=default_transaction_read_only, value=off]
+ -> ParameterStatus[param=in_hot_standby, value=off]
+ -> ParameterStatus[param=integer_datetimes, value=on]
+ -> ParameterStatus[param=IntervalStyle, value=postgres]
+ -> ParameterStatus[param=is_superuser, value=on]
+ -> ParameterStatus[param=server_encoding, value=UTF8]
+ -> ParameterStatus[param=server_version, value=14.13 (Debian 14.13-1.pgdg110+1)]
+ -> ParameterStatus[param=session_authorization, value=test]
+ -> ParameterStatus[param=standard_conforming_strings, value=on]
+ -> ParameterStatus[param=TimeZone, value=Etc/UTC]
+
+ -> BackendKeyData[pid=78, secretKey=2142925098]
+
+ -> ReadyForQuery[txStatus=IDLE]
+~~~
 
 
-- типов сообщений много
 - Startup phase is slow (новое соединение на каждый запрос)
 - Auth Scram SHA: 4096 XOR-итераций (с версии 15)
 
 ## Дальнейший обмен сообщениями
 
- -> Query
+~~~
+ <- Query[query=select * from users]
+ -> RowDescription[columnCount=11, columns=[Column[index=0, name=int4, tableOid=0, columnOid=0, typeOid=23, typeLen=4, typeMod=-1, format=TXT],
+                                            Column[index=1, name=int8, tableOid=0, columnOid=0, typeOid=20, typeLen=8, typeMod=-1, format=TXT],
+                                            ...
+ -> DataRow[count=11, buf=java.nio.HeapByteBuffer[pos=2 lim=166 cap=166]]
+ -> DataRow[count=11, buf=java.nio.HeapByteBuffer[pos=2 lim=166 cap=166]]
+ -> CommandComplete[command=SELECT 2]
+ -> ReadyForQuery[txStatus=IDLE]
+~~~
 
-TODO
+конечный автомат:
+- запомнить RowDescription
+- распарсить DataRow -> {}
+- сложить в список
+- CommandComplete - вернуть список
 
 ## Зачем?
 
@@ -126,7 +221,7 @@ TODO
 - где API лучше
 - отталкиваться от задач
 
-## Я не одинок
+## Другие библиотеки
 
 - postgres-async-driver
 https://github.com/alaisi/postgres-async-driver (java)
@@ -290,16 +385,37 @@ Text vs Binary format
 - Выбирает клиент
 - с точностью до поля
 
-Что это значит -- таблица TODO с типами TXT/BIN
-
 - когда малые значения -- расход трафика
 - когда большие значения -- экономия трафика
+
+| Type     | Text                | Binary                            |
+|----------|---------------------|-----------------------------------|
+| Byte     | 1                   | [49]                              |
+| Integer  | 1                   | [0, 0, 0, 1]                      |
+| Long     | 1                   | [0, 0, 0, 0, 0, 0, 0, 1]          |
+| Long MAX | 9223372036854775807 | [127, -1, -1, -1, -1, -1, -1, -1] |
+|          |                     |                                   |
+
+~~~clojure
+(count (str 9223372036854775807))
+19
+~~~
+
+~~~clojure
+(-> (java.nio.ByteBuffer/allocate 8)
+    (.putLong Long/MAX_VALUE)
+    (.array))
+[127, -1, -1, -1, -1, -1, -1, -1]
+~~~
+
 
 - бинарный формат: удобней парсить (нет вариативности)
 
 примеры (массив, даты)
 
 PG EPOCH OFFSET
+
+TODO
 
 строки с null-окончанием, неудобно парсить
 
