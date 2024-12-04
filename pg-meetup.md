@@ -906,6 +906,123 @@ Free connections!
 Редьюсеры
 ===
 
+- выбрать всех пользователей
+[{:id 1}, {:id 2}]
+
+- сгруппировать по id
+{1 {:id 1, :email...}
+ 2 {:id 2, :email...}}
+
+- приклеить куда-то
+
+(for [id ...]
+  (let [user (get id->user id)]
+    ...))
+
+CSV <- users
+
+- O(N) выборка
+- O(N) индекс
+
+= O(2N)
+
+модификации за O(N)
+--
+
+next.jdbc: plan:
+
+(jdbc/plan conn ...) -> IReduceInit
+
+~~~clojure
+(let [reducible (jdbc/plan conn "...")]
+  (reduce
+   (fn [acc row]
+     ...)
+   []
+   reducible))
+~~~
+
+pg2: folders
+
+ns pg.fold:
+
+- index-by   :id
+- group-by   (-> email getDomain)
+
+TODO пример
+
+gmail.com -> [user1, user2]
+mail.ru -> [user3, user4]
+
+- map         any func
+- key-value   {(fn-key row) -> (fn-val row)}
+- reduce
+
+
+- columns [id, age]
+
+{:id 1 :email "test@test.com" :age 42}
+
+[[1 42]
+ [2 53]
+ ...
+]
+
+to-edn
+to-json
+
+run
+into/xform
+
+TODO пример
+
+TODO алиасы
+
+~~~clojure
+(fn
+  ([])        -> acc
+  ([acc row]) -> acc
+  ([acc])     -> finalize
+  )
+
+;; default
+(fn
+  ([])        -> (transient [])
+  ([acc row]) -> (conj! acc row)
+  ([acc])     -> (persistent acc)
+  )
+~~~
+
+Copy
+==
+
+- JDBC: только InputStream (в CSV сам)
+- вставка из словарей
+- map -> CSV row -> COPY
+- бинарый формат COPY ... WITH FORMAT BIN
+- по одной записи
+- быстрее
+
+Контриб
+==
+
+- pg-component
+- pg-honeysql
+- pg-hugsql
+- pg-migration
+
+- pgvector
+- JSONb
+- geometry
+
+планирую
+- postgis
+
+удобный SSL
+
+
+КОНЕЦ
+=====
 
 
 
@@ -914,62 +1031,6 @@ Free connections!
 
 
 
-
-
-# PG2: A Fast PostgreSQL Driver For Clojure
-
-https://github.com/igrishaev/pg2
-
-https://github.com/igrishaev/pg
-
-
-PG(one) на Clojure
-
-# Драйвер или клиент?
-
- ┌────┐    ┌───────────┐    ┌─────┐
- │ Да │    │           │    │ Нет │
- └────┼────│   JDBC?   │────┼─────┘
-      │    │           │    │
-      │    └───────────┘    │
-      ▼                     ▼
-┌───────────┐         ┌───────────┐
-│           │         │           │
-│  Драйвер  │         │  Клиент   │
-│           │         │           │
-└───────────┘         └───────────┘
-
-
-# О чем
-
- специфика (дата-время)
- сам -- нет (но надеюсь)
-
-- Postgres Wire Protocol
-- зачем (JDBC, next.jdbc)
-- парсинг
-- типы
-- API и дизайн
-
-
-Postgres Wire Protocol
-
-Глава 55. Клиент-серверный протокол
-https://postgrespro.ru/docs/postgresql/15/protocol
-
-
-
-
-Общие сведения
-
-
-
-
-
-Postgres Wire Protocol
-
-Глава 55. Клиент-серверный протокол
-https://postgrespro.ru/docs/postgresql/15/protocol
 
 
 
