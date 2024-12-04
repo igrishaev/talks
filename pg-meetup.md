@@ -733,12 +733,178 @@ DataRow
                          └ ─ ─ ─ ─ ─ ─ ─ ─ ┴ ─ ─ ─ ─ ─ ─ ─ ─ ┘
 
 
+
+RowDescription
+id    ... ... 21 0 email ... ... 25 0
+
+DataRow
+ 2 4 2
+16 i v a n @ g r i s h a e v . m e
+
+
+распарсить в
+[{:id 42 :email "ivan@grishaev.me"}
+ {:id 99 :email "test@foobarxx.ru"}]
+
+
+~~~java
+RowDescription rd = conn.readRowDescription();
+List<?> result = new ArrayList();
+
+while (has_more) {
+    row = conn.readDataRow()
+    map = parseDataRow(rd, row)
+    result.add(map)
+}
+~~~
+
+медленно
+--
+
+- не все поля нужны
+
+~~~clojure
+select * from users where ...
+
+(println (:id user) (:email user))
+~~~
+
+- задерживаем соединение
+
+
+clojure.java.jdbc: result-set-seq
+https://github.com/clojure/java.jdbc/blob/master/src/main/clojure/clojure/java/jdbc.clj#L545
+
+
+ленивый парсинг
+-
+
+- забрать все сразу
+- не парсить
+- парсить по запросу
+
 next.jdbc: mapify
 https://github.com/seancorfield/next-jdbc/blob/develop/src/next/jdbc/result_set.clj#L479
 
 
+reify (ResultSet)
+  clojure.lang.Counted
+  clojure.lang.IPersistentCollection
+  clojure.lang.ILookup
+  clojure.lang.Indexed
 
 
+pg2
+--
+
+PG2: RowMap class
+https://github.com/igrishaev/pg2/blob/master/pg-core/src/java/org/pg/clojure/RowMap.java
+
+class RowMap extends APersistentMap {
+
+    RowDescription
+    DataRow
+    {i -> keyName}
+    ToC [0 [ 0 6]
+         1 [ 7 18]
+         2 [19 52]
+         ... ]
+    cache: {i -> value}
+
+
+    assoc -> parse all and return a real map
+
+}
+
+
+  (get my-row 2)
+# ^^^^^^^^^^^^^^
+
+2 -> ToC -> [19 52]
+
+DataRow [19 52] -> byte-array[...]
+
+RowDescription -> 2 -> OID -> text (25)
+RowDescription -> 2 -> format -> 1 (binary)
+
+
+TypeMapping -> 25 -> TypeProcessor
+
+TypeProcessor -> decodeTxt
+              -> decodeBin(byte-array)
+
+=> test@test.com
+
+set cache: {2 -> test@test.com}
+
+  (get my-row :email)
+# ^^^^^^^^^^^^^^^^^^^
+
+:email -> {:email -> 2} -> 2
+
+GOTO (get my-row 2)
+
+
+
+
+
+class RowMap extends APersistentMap {
+     ┌───────────┬─────┬───────────┬────────────────┐
+     │           │     │███████████│                │
+     └───────────┴─────┴───────────┴────────────────┘
+      0           1     2           3
+}
+
+
+
+
+
+Performance parse vs lazy parse
+===========
+
+lazy read:
+https://grishaev.me/assets/static/aws/pg2-bench-3/02.svg
+
+
+full eval read
+https://grishaev.me/assets/static/aws/pg2-bench-3/08.svg
+
+
+стратегия:
+- все забрать
+- обработать
+
+~~~clojure
+(with-conn [conn pool]
+  (let [users
+        (pg/execute conn "select users ...")
+
+        orders
+        (pg/execute conn "select orders ...")]
+
+    (process-business-logic users orders)))
+~~~
+
+
+~~~clojure
+(let [users
+      (with-conn [conn pool]
+        (pg/execute conn "select users ..."))
+
+      orders
+      (with-conn [conn pool]
+        (pg/execute conn "select orders ..."))]
+
+  (process-business-logic users orders))
+~~~
+
+Free connections!
+==
+
+
+
+Редьюсеры
+===
 
 
 
