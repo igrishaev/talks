@@ -213,10 +213,11 @@ https://github.com/igrishaev/pg2/blob/master/pg-core/src/java/org/pg/Connection.
 - задействовать Postgres по максимуму
 - JDBC -- общий знаменатель (угодить всем)
 
-1. jsonb          нет
+1. jsonb          - (PGObject)
 2. COPY API       CopyManager
 3. Date & Time    java.sql.Timestamp (java.util.Date deprecated 1.1)
 4. SSL            keystore
+5. Listen/Notify  -
 
 Хочу:
 
@@ -224,6 +225,7 @@ https://github.com/igrishaev/pg2/blob/master/pg-core/src/java/org/pg/Connection.
 2. COPY API       functions
 3. Date & Time    java.time.*
 4. SSL            параметр
+5. Listen/Notify  PubSub
 
 + не настраивать это в каждом проекте
 
@@ -889,18 +891,19 @@ TypeProcessors
 - сложно, громоздко
 + можно передать свои типы
 
-10234  ->  PGVectorProcessor
+oid -> PGVectorProcessor
 
+но какой oid?
+pgvector создает свои типы
 
+   prod 1001
+staging 100123
+ docker 514123
 
-pgvector -> типы по запросу
+{"public.vector" Processor}
 
-oid? 1001, 100123, 514123
-
-{:type-map {"public.vector" Processor}}
-
-{:type-map {:public/vector VectorProcessor
-            :public/sparsevec SparseVectorProcessor}}
+{:public/vector VectorProcessor
+ :public/sparsevec SparseVectorProcessor}
 
 
 ~~~sql
@@ -933,6 +936,8 @@ and pg_namespace.nspname || '.' || pg_type.typname in (
 
 
 Зачем схема?
+----
+
 
 
 
@@ -941,7 +946,7 @@ and pg_namespace.nspname || '.' || pg_type.typname in (
 create schema foo;
 create schema bar;
 
-create type foo.color as enum (red, green blue);
+create type foo.color as enum (R, G, B);
 create type bar.color as enum (C, M, Y, K);
 
 foo.color = 51233
@@ -954,6 +959,9 @@ bar.color = 13139
 
 {foo.color -> EnumProcessor
  bar.color -> EnumProcessor}
+
+
+
 
 
 Парсинг
@@ -999,14 +1007,8 @@ RowDescription
 id    ... ... 21 0 email ... ... 25 0
 
 DataRow
- 2 4 2
-16 i v a n @ g r i s h a e v . m e
-
-
-распарсить в
-[{:id 42 :email "ivan@grishaev.me"}
- {:id 99 :email "test@foobarxx.ru"}]
-
+ 2  4 2
+16  i v a n @ g r i s h a e v . m e
 
 ~~~java
 RowDescription rd = conn.readRowDescription();
@@ -1019,7 +1021,10 @@ while (has_more) {
 }
 ~~~
 
-медленно
+[{:id 42, :email "ivan@grishaev.me", :name, :created_at, :gender:, ...}
+ ...]
+
+1. медленно
 --
 
 - не все поля нужны
@@ -1030,11 +1035,24 @@ select * from users where ...
 (println (:id user) (:email user))
 ~~~
 
-- задерживаем соединение
+2. задерживаем соединение
+--
 
 
-clojure.java.jdbc: result-set-seq
-https://github.com/clojure/java.jdbc/blob/master/src/main/clojure/clojure/java/jdbc.clj#L545
+<- DataRow
+<- DataRow
+<- DataRow
+...
+
+
+<- DataRow
+   parse + process...
+<- DataRow
+   parse + process...
+<- DataRow
+   parse + process...
+<- DataRow
+
 
 
 ленивый парсинг
@@ -1066,16 +1084,20 @@ class RowMap extends APersistentMap {
     RowDescription
     DataRow
     {i -> keyName}
-    ToC [0 [ 0 6]
-         1 [ 7 18]
-         2 [19 52]
-         ... ]
+    ToC
     cache: {i -> value}
 
-
-    assoc -> parse all and return a real map
-
 }
+
+
+ToC
+
+|   | start | end |
+|---|-------|-----|
+| 0 | 0     | 6   |
+| 1 | 7     | 18  |
+| 2 | 19    | 52  |
+| 3 | 52    | ... |
 
 
   (get my-row 2)
@@ -1085,9 +1107,8 @@ class RowMap extends APersistentMap {
 
 DataRow [19 52] -> byte-array[...]
 
-RowDescription -> 2 -> OID -> text (25)
-RowDescription -> 2 -> format -> 1 (binary)
-
+RowDescription -> 2 -> OID    = text (25)
+RowDescription -> 2 -> format = 1 (binary)
 
 TypeMapping -> 25 -> TypeProcessor
 
@@ -1104,8 +1125,6 @@ set cache: {2 -> test@test.com}
 :email -> {:email -> 2} -> 2
 
 GOTO (get my-row 2)
-
-
 
 
 
@@ -1280,6 +1299,8 @@ Copy
 - postgis
 
 удобный SSL
+
+listen/notify
 
 
 КОНЕЦ
