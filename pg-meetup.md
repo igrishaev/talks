@@ -486,13 +486,12 @@ node-pg только текст
 Parse Text vs Binary
 ---
 
-
 Легче?
 
-- 12345
-- 14.23452
-- false
-- hello
+- 12345              0, 0, 48, 57
+- 14.23452           64, 44, 120, 19, 0, 0, 0, 0
+- false              0
+- hello              104, 101, 108, 108, 111
 - null               -1, -1, -1, -1
 
 Короче?
@@ -506,33 +505,104 @@ Parse Text vs Binary
 | Integer  | 1                   | [0, 0, 0, 1]                      |
 | Long     | 1                   | [0, 0, 0, 0, 0, 0, 0, 1]          |
 | Long MAX | 9223372036854775807 | [127, -1, -1, -1, -1, -1, -1, -1] |
-|          |                     |                                   |
+#            36 bytes              8 bytes
+             4.5 times >
 
-~~~clojure
-(count (str 9223372036854775807))
-19
-~~~
+datetime
 
-~~~clojure
-(-> (java.nio.ByteBuffer/allocate 8)
-    (.putLong Long/MAX_VALUE)
-    (.array))
-[127, -1, -1, -1, -1, -1, -1, -1]
-~~~
+2023-07-10 22:25:22.046553+03
+2023-07-10T22:25:22.046553+03:00
+2023-07-10 22:25:22.046553
+2022-07-03T00:00+03:00
+2023-01-01 00:00:00Z
 
-- бинарный формат: удобней парсить (нет вариативности)
+10:29:39.853741+03:00
+10:29:39+03
 
-примеры (массив, даты)
 
-PG EPOCH OFFSET
+[.[SSSSSS][SSSSS][SSSS][SSS][SS][S]][[XXX][XX][X]]
 
-TODO
+    static {
+        frmt_decode_timestamptz = new DateTimeFormatterBuilder()
+                .appendPattern("yyyy-MM-dd HH:mm:ss" + patternMsTz)
+                .toFormatter()
+                .withZone(ZoneOffset.UTC);
 
-строки с null-окончанием, неудобно парсить
+see DateTimeTxt.java
+    ^^^^^^^^^^^^^^^^
 
-примеры с датами, форматы
-numeric type (ссылка на JDBC)
-нагромождение кода
+{null,"foo\"bar","C:\\windows"}
+
+[nil "foo\"bar" "C:\\windows"]
+
+null != "null"
+
+arrays:
+
+{{{a,b},{c,d}},{{e,f},{g,h}}}
+
+[[["a" "b"] ["c" "d"]]
+ [["e" "f"] ["g" "h"]]]
+
+bin:
+
+   [0,  0,  0,  2,  ;; dims
+    0,  0,  0,  1,  ;; nulls true
+    0,  0,  0,  23, ;; oid
+    0,  0,  0,  2,  ;; dim1 = 2
+    0,  0,  0,  1,  ;; ?
+    0,  0,  0,  3,  ;; dim2 = 3
+    0,  0,  0,  1,  ;; ?
+    0,  0,  0,  4,  ;; len
+    0,  0,  0,  1,  ;; 1
+    0,  0,  0,  4,  ;; len
+    0,  0,  0,  2,  ;; 2
+    0,  0,  0,  4,  ;; len
+    0,  0,  0,  3,  ;; 3
+    0,  0,  0,  4,  ;; len
+    0,  0,  0,  4,  ;; 4
+   -1, -1, -1, -1,  ;; null
+    0,  0,  0,  4,  ;; len = 4
+    0,  0,  0,  6   ;; 6
+    ]
+
+нет вариативности
+
+Даты:
+
+2022-01-01 12:01:59.123456789+03
+
+[0 2 119 -128 79 11 -14 1]
+
+(-> [0 2 119 -128 79 11 -14 1]
+    (byte-array)
+    (java.nio.ByteBuffer/wrap )
+    (.getLong))
+
+  694342919123457
+#          ^^^^^^
+
+/ 1.000.000
+
+694342919.123457
+
+694342919 sec + PG offset
+   123457 microsec
+
+123457 * 1000 = 123457000 nanosec
+
+duration b/w 1970-01-01 and 2000-01-01
+= 946684800 seconds
+
+694342919 + 946684800 = 1641027719
+
+1641027719 sec
+ 123457000 nanosec
+
+
+Instant.ofEpochSecond(sec, nanoSec)
+2022-01-01 12:01:59.123457Z
+
 
 
 
@@ -541,9 +611,9 @@ numeric type (ссылка на JDBC)
 
 ## (Де)кодирование
 
-- записать         txt
+- отправить        txt
               x
-- прочитать        bin
+- получить         bin
 
 
 int4
@@ -571,14 +641,16 @@ int2, int4, int8, float4, float8, bool, text...
   сложные типы -- коллекция примитивов
 # ^^^^^^^^^^^^
 
-polygon ((1.0,2.0),(3.0,4.0),(5.3,6.2))
+path ((1.0,2.0),(3.0,4.0))
 
-[N, double1, double2, double3, double4...]
-
+simple Gis (path, line, polygon, box)
 
 [1 0 0 0 2 63 -16 0 0 0 0 0 0 64 0 0 0 0 0 0 0 64 8 0 0 0 0 0 0 64 16 0 0 0 0 0 0]
 
 wtf?
+===
+
+[closed?, N, double1, double2, double3, double4...]
 
 [1                    bool    closed?
  0 0 0 2              int     N of points
@@ -590,8 +662,8 @@ wtf?
 
 Если непонятно?
 
-- смотреть исходник
 - pg_type
+- смотреть исходник
 
 ~~~sql
 select
@@ -610,15 +682,27 @@ typoutput  | textout
 typreceive | textrecv
 typsend    | textsend
 
-pg-vector
+pgvector
+
+sparsevec
 
 sparsevec_send
 
 https://github.com/pgvector/pgvector/blob/5bc7937715c67add21c8bcc0d4284162c7a0174f/src/sparsevec.c#L546
 
 
-* Сопоставление типов *
------------------------
+
+
+
+
+** Сопоставление типов **
+-------------------------
+
+int4     Integer
+int8     Long
+text     String
+bool     Boolean
+
 
 - таблица pg_types
 - откуда?
@@ -662,7 +746,7 @@ date            java.time.LocalDate
 
 # сложные
 
-json            ?
+jsonb           ?
 hstore          ?
 polygon         ?
 line            ?
@@ -734,21 +818,26 @@ typowner       | 16384
 typlen         | -1
 ...
 
+
+
 неправильно (один к одному):
 -
-oid -> java
+ oid -> java
 java -> oid
+
+
+
 
 
 правильно (пары):
 -
 
-[oid, java] -> encode
+[oid, java]     -> encode
 
 [jsonb map]     -> json.encode(...)
 [jsonb vector]  -> json.encode(...)
 [jsonb bool]    -> json.encode(...)
-[jsonb nil]     -> nil
+[jsonb nil]     -> "null" -> nil
 [jsonb string]  -> string
 
 [jsonb [1 2 3]]      -> "[1, 2 ,3]"
@@ -763,9 +852,12 @@ java -> oid
 [point {:x 1 :y 2}] -> (1, 2)
 [point [1 2]]       -> (1, 2)
 
+
+
+
+
 TypeProcessors
 --
-
 
 Вот что получилось:
 
@@ -798,6 +890,8 @@ TypeProcessors
 + можно передать свои типы
 
 10234  ->  PGVectorProcessor
+
+
 
 pgvector -> типы по запросу
 
@@ -839,6 +933,8 @@ and pg_namespace.nspname || '.' || pg_type.typname in (
 
 
 Зачем схема?
+
+
 
 # Enums
 
