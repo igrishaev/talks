@@ -88,7 +88,7 @@ TODO demo
 
 ## Postgres Wire Protocol
 
-1. подключаемся к сокету
+1. подключаемся к сокету 127.0.0.1:5432
 2. передаем сообщение
 3. читаем сообщение
 4. все!
@@ -105,8 +105,9 @@ https://postgrespro.ru/docs/postgresql/15/protocol
 - отправка
 - чтение до какого-то условия
 - отправка
+- конечный автомат
 
-пример Query
+Query
 
 ┌─────┬──────────┬───────────────────────────────────────┐
 │ Q   │ 0 0 0 33 │ select * from users where id = 1\0    │
@@ -118,16 +119,16 @@ InputStream in = socket.getInputStream()
 
 byte tag = in.read()
 int len = in.readInt()
-byte[] buf = new byte[len
+byte[] buf = new byte[len]
 
 in.read(buf)
 
 pair = [tag buf]
 
 switch tag {
-  case 'S' -> ...
-  case 'R' -> ...
-  case 'd' -> ...
+  case 'S' -> parseThis()
+  case 'R' -> parseThat()
+  case 'd' -> parseMore()
   default: throw "msg not supported"
 }
 ~~~
@@ -172,7 +173,6 @@ https://github.com/igrishaev/pg2/blob/master/pg-core/src/java/org/pg/Connection.
  -> ReadyForQuery[txStatus=IDLE]
 ~~~
 
-
 - Startup phase is slow (новое соединение на каждый запрос)
 - Auth Scram SHA: 4096 XOR-итераций (с версии 15)
 
@@ -195,6 +195,17 @@ https://github.com/igrishaev/pg2/blob/master/pg-core/src/java/org/pg/Connection.
 - сложить в список
 - CommandComplete - вернуть список
 
+
+Итого
+- простой, понятный протокол
+- своего рода стандарт
+- бинарый обмен данными (образец)
+- TCP клиент-сервер
+
+
+
+
+
 ## Зачем?
 
 - интересно
@@ -202,9 +213,9 @@ https://github.com/igrishaev/pg2/blob/master/pg-core/src/java/org/pg/Connection.
 - задействовать Postgres по максимуму
 - JDBC -- общий знаменатель (угодить всем)
 
-1. JSON           нет
+1. jsonb          нет
 2. COPY API       CopyManager
-3. Date & Time    java.sql.Timestamp
+3. Date & Time    java.sql.Timestamp (java.util.Date deprecated 1.1)
 4. SSL            keystore
 
 Хочу:
@@ -216,10 +227,22 @@ https://github.com/igrishaev/pg2/blob/master/pg-core/src/java/org/pg/Connection.
 
 + не настраивать это в каждом проекте
 
+
+
+
 ## Дизайн и API
 
+- подумать о дизайне
+- решение задач
 - где API лучше
-- отталкиваться от задач
+
+
+
+
+
+
+
+
 
 ## Другие библиотеки
 
@@ -236,9 +259,15 @@ https://github.com/sfackler/rust-postgres
 
 
 
+
+
+
+
 # Специфика
 
 ## Query vs Execute
+
+psycopg .query() .execute()
 
   Query -- выполнить одно и более выражений без параметров
 #                    ^^^^^^^^^^^^           ^^^^^^^^^^^^^^
@@ -250,7 +279,7 @@ Query
 
 conn.query(...)
 
- -> Query            select * from users where email ilike 'gmail.com'
+ -> Query            select * from users where email ilike '%@gmail.com'
 <-  RowDescription   id(int), email(text), age(int)
 <-  DataRow          1, kek@gmail.com, 42
 <-  DataRow          2, lol@gmail.com, 23
@@ -264,7 +293,7 @@ conn.query(...)
 
 ~~~sql
 select * from users where email ilike 'gmail.com';
-select * from orders where sku = 'ABC-123';
+select * from orders where sku = 'ABC-123'
 ~~~
 
  -> Query               .......
@@ -312,15 +341,15 @@ conn.execute(...)
 
 Расширенный протокол: выполнить с параметрами
 
-Execute = Parse + Describe + Bind + Execute + Sync + Flush + Close
+conn.execute() = Parse + Describe + Bind + Execute + Sync + Flush + Close
 
- -> Parse                 select * from users where name = $1, ps1
+ -> Parse                 select * from users where name = $1, stmt1
 <-  ParseComplete
-<-  Describe              ps1
+<-  Describe              stmt1
 <-  ParameterDescription  (text)
- -> Bind                  "Robert", prt1
+ -> Bind                  stmt1, "Robert", portal1
 <-  BindComplete
- -> Execute               prt1, 100
+ -> Execute               portal1, 100
  -> Sync
  -> Flush
 
@@ -331,8 +360,8 @@ Execute = Parse + Describe + Bind + Execute + Sync + Flush + Close
 <-  CommandComplete       SELECT 100
 <-  ReadyForQuery         I
 
- -> Close                 prt01
- -> Close                 ps1
+ -> Close                 portal1
+ -> Close                 stmt1
  -> Sync
  -> Flush
 <-  CloseComplete
@@ -343,20 +372,18 @@ Execute = Parse + Describe + Bind + Execute + Sync + Flush + Close
 # ^^^^^
 
 - 8-10 сообщений до того, как получили данные
-- только один запрос
+- execute только один запрос
 - безопасно в плане инъекций (кавычки, дефисы)
 - кэш подготовленных выражений!
 
 JDBC - скрытый кэш
 
-{SQL -> PSid}
+{SQL -> PS}
 
-{select * from users where name = $1  -> ps5131}
+{select * from users where name = $1 -> ps5131}
 
-parse, describe ...
+DISCARD ALL
 
-bind(ps5131 + Ivan)
-bind(ps5131 + Huan)
 
 
   Query подходит для миграций и DDL
@@ -378,52 +405,16 @@ create enum color as (red, blue, green)
 # ^^^^^^^
 
 
+
+
+
+
 Text vs Binary format
 ---------------------
 
 - Postgres передает данные в двух форматах
 - Выбирает клиент
 - с точностью до поля
-
-- когда малые значения -- расход трафика
-- когда большие значения -- экономия трафика
-
-| Type     | Text                | Binary                            |
-|----------|---------------------|-----------------------------------|
-| Byte     | 1                   | [49]                              |
-| Integer  | 1                   | [0, 0, 0, 1]                      |
-| Long     | 1                   | [0, 0, 0, 0, 0, 0, 0, 1]          |
-| Long MAX | 9223372036854775807 | [127, -1, -1, -1, -1, -1, -1, -1] |
-|          |                     |                                   |
-
-~~~clojure
-(count (str 9223372036854775807))
-19
-~~~
-
-~~~clojure
-(-> (java.nio.ByteBuffer/allocate 8)
-    (.putLong Long/MAX_VALUE)
-    (.array))
-[127, -1, -1, -1, -1, -1, -1, -1]
-~~~
-
-
-- бинарный формат: удобней парсить (нет вариативности)
-
-примеры (массив, даты)
-
-PG EPOCH OFFSET
-
-TODO
-
-строки с null-окончанием, неудобно парсить
-
-примеры с датами, форматы
-numeric type (ссылка на JDBC)
-нагромождение кода
-
-
 
 
 
@@ -436,7 +427,7 @@ Bind: передать параметры запросу
 <- ps1
 
 
-  Bind ps1, ivan, 66
+  Bind ps1, [ivan, 66]
 # ^^^^
 
 ~~~
@@ -480,15 +471,73 @@ age   int4  1
  <- DataRow   bin text   text
  <- DataRow   bin text   text
 
-(как правило -- все сразу)
+как правило -- все сразу
 
 node-pg только текст
 
-опции PG
+опции PG2
 {
  :binary-encode? false
  :binary-decode? false
 }
+
+
+
+Parse Text vs Binary
+---
+
+
+Легче?
+
+- 12345
+- 14.23452
+- false
+- hello
+- null               -1, -1, -1, -1
+
+Короче?
+
+- когда малые значения -- расход трафика
+- когда большие значения -- экономия трафика
+
+| Type     | Text                | Binary                            |
+|----------|---------------------|-----------------------------------|
+| Byte     | 1                   | [49]                              |
+| Integer  | 1                   | [0, 0, 0, 1]                      |
+| Long     | 1                   | [0, 0, 0, 0, 0, 0, 0, 1]          |
+| Long MAX | 9223372036854775807 | [127, -1, -1, -1, -1, -1, -1, -1] |
+|          |                     |                                   |
+
+~~~clojure
+(count (str 9223372036854775807))
+19
+~~~
+
+~~~clojure
+(-> (java.nio.ByteBuffer/allocate 8)
+    (.putLong Long/MAX_VALUE)
+    (.array))
+[127, -1, -1, -1, -1, -1, -1, -1]
+~~~
+
+- бинарный формат: удобней парсить (нет вариативности)
+
+примеры (массив, даты)
+
+PG EPOCH OFFSET
+
+TODO
+
+строки с null-окончанием, неудобно парсить
+
+примеры с датами, форматы
+numeric type (ссылка на JDBC)
+нагромождение кода
+
+
+
+
+
 
 ## (Де)кодирование
 
@@ -1139,173 +1188,3 @@ Copy
 
 КОНЕЦ
 =====
-
-
-
-
-
-
-
-
-
-
-
-
-┌─────┬──────────┬───────────────────────────────────────┐
-│ tag │  length  │             byte payload              │
-└─────┴──────────┴───────────────────────────────────────┘
-
-
-┌─────┬─────────────┬───────────────────────────────────────┐
-│ Q   │  4 + 31 + 1 │ select from users where id = 42\0     │
-└─────┴─────────────┴───────────────────────────────────────┘
-
-
- -> StartupMessage
- <- AuthenticationMessage
- ...
-
-
-# Text Vs Binary
-
-Query: text only
-Execute: both text and binary
-
-
-node-postgres: text only
-https://www.npmjs.com/package/pg
-
-
-
-
-| Type     | Text                | Binary                            |
-|----------|---------------------|-----------------------------------|
-| Byte     | 1                   | [49]                              |
-| Integer  | 1                   | [0, 0, 0, 1]                      |
-| Long     | 1                   | [0, 0, 0, 0, 0, 0, 0, 1]          |
-| Long MAX | 9223372036854775807 | [127, -1, -1, -1, -1, -1, -1, -1] |
-|          |                     |                                   |
-
-~~~clojure
-(count (str 9223372036854775807))
-19
-~~~
-
-~~~clojure
-(-> (java.nio.ByteBuffer/allocate 8) (.putLong Long/MAX_VALUE) (.array))
-[127, -1, -1, -1, -1, -1, -1, -1]
-~~~
-
-
-Text
-
-
-
-# Парсинг
-
--> Query                select id, email, created_at from users
-<- RowDescription       [(name id, type int...), (name email, type text...), (name created-at, type timestamptz...)]
-<- DataRow              [1, test@test.com, 2023-04-13]
-<- DataRow              [2, ivan@acme.com, 2022-03-13]
-<- DataRow              [3, jora@kyky.com, 2021-12-30]
-<- CommandComplete      SELECT 3
-<- ReadyForQuery        .
-
-
-(state machine)
-
-
-55.7. Форматы сообщений
-https://postgrespro.ru/docs/postgresql/15/protocol-message-formats
-
-RowDescription
-
-┌─────┬──────────┬───────┬───────┬─────────┬────────────┬─────────┬─────────┬─────────┬─────────┐
-│  T  │  length  │ N-col │ name  │table OID│ column OID │type OID │type size│type mod │ format  │
-└─────┴──────────┴───────┼───────┴─────────┴────────────┴─────────┴─────────┴─────────┴─────────┘
-                                                         field 1                                │
-                         └ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─
-                         ┌───────┬─────────┬────────────┬─────────┬─────────┬─────────┬─────────┐
-                         │ name  │table OID│ column OID │type OID │type size│type mod │ format  │
-                         ├───────┴─────────┴────────────┴─────────┴─────────┴─────────┴─────────┘
-                                                         field 2                                │
-                         └ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─
-
-
-format: 0=bin, 1=txt
-
-
-
-
-DataRow
-
-┌─────┬──────────┬───────┬───────┬─────────┬───────┬─────────┬───────┐
-│  B  │  length  │ N-col │  len  │  bytes  │  len  │  bytes  │  ...  │
-└─────┴──────────┴───────┼───────┴─────────┼───────┴─────────┼───────┘
-                               field 1           field 2
-                         └ ─ ─ ─ ─ ─ ─ ─ ─ ┴ ─ ─ ─ ─ ─ ─ ─ ─ ┘
-
-
-# Множественные выражения
-
--> Query                select * from users; select * from orders;
-
-<- RowDescription       [(name id, type int...), (name email, type text...), ...]
-<- DataRow              [1, test@test.com, 2023-04-13]
-<- DataRow              [2, ivan@acme.com, 2022-03-13]
-<- DataRow              [3, jora@kyky.com, 2021-12-30]
-<- CommandComplete      SELECT 3
-
-<- RowDescription       [(name sku, type text...), (name user_id, type int...), ...]
-<- DataRow              [XAG-123, 1001]
-<- DataRow              [URG-553, 2021]
-<- CommandComplete      SELECT 2
-
-<- ReadyForQuery        .
-
-~~~clojure
-(pg/query conn "select * from users; select * from orders;")
-
-[[{:id 1 :email "test@test.com"}
-  {:id 2 :email "ivan@acme.com"}
-  ...]
- [{:sku "XAG-123" :user-id 1001}
-  {:sku "URG-553" :user-id 2021}
-  ...
- ]]
-~~~
-
-А если ошибка?
-
--> Query                select * from users; select * from orders;
-
-<- ErrorResponse        permission to table users denied...
-
-<- RowDescription       [(name sku, type text...), (name user_id, type int...), ...]
-<- DataRow              [XAG-123, 1001]
-<- DataRow              [URG-553, 2021]
-<- CommandComplete      SELECT 2
-
-<- ReadyForQuery        .
-
-
-## Протокол
-##
-##
-##
-##
-##
-##
-
-
-
-Table of Content
-
-PG2
-- pg(one)
--
-
-
-зачем?
-- интересно
--
