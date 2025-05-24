@@ -1,0 +1,54 @@
+{
+  "id": 1,
+  "requested-at": {
+    "id": 61345,
+    "short-name": "Mars Inc",
+    "short-code": "mars-inc"
+  },
+  "sum": [
+    {
+      "amount": 100000000,
+      "currency": "usd",
+      "period": "10 years"
+    },
+    {
+      "amount": 100000000,
+      "currency": "eur",
+      "period": "15 years"
+    }
+  ],
+  "reviewed": [
+    {
+      "department": "Some Dep A",
+      "code": "dep-a",
+      "reviewers": [
+        {
+          "id": "ivan@acme.com",
+          "role": "manager",
+          "review": "approve"
+        },
+        {
+          "id": "john@acme.com",
+          "role": "analytic",
+          "review": "reject"
+        }
+      ]
+    },
+    {
+      "department": "Some Dep B",
+      "code": "dep-b",
+      "reviewers": [
+        {
+          "id": "marc@acme.com",
+          "role": "manager",
+          "review": "need-more-info"
+        },
+        {
+          "id": "ivan@acme.com",
+          "role": "accounter",
+          "review": "approve"
+        }
+      ]
+    }
+  ]
+}
