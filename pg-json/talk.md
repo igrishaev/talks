@@ -61,15 +61,18 @@ image
 JsonField (Django)
 
 ~~~python
-class SomeModel:
+class JsonField(TextField)
+  ...
+
+class UserModel:
     id = IntegerField()
     name = TextField()
     data = JsonField()
 
-model = SomeModel.get_by_id(1)
+user = UserModel.get_by_id(1)
 
-model.data["field"] = 42
-model.save()
+user.data["field"] = 42
+user.save()
 ~~~
 
 
@@ -79,41 +82,61 @@ model.save()
 модели
 
 
-# переезд
+# Переезд
 
 OpenSearch
-про датомик
+30 services
 
-# почему
+# Почему
 
 1. дорогой
-2. транзакции
-3. проекции
-4. sql
+^^^^^^^^^^
+2. проекции
+3. sql
+4. протокол
 
-таблица
 
-get-by-id
+1. уже был postgres; pg $>   opensearch $<<<
+2. разработчик выполняет роль базы
 
-compression
+entityA - get some-ids (1, 2, 3, 4, 5)
+entityB - get other-ids (10, 20, 30, 40, 50)
+entityC - get entities by ids (... .... ...)
 
-запрос по полю
-индекс
-вывод типов
+3. дайте людям SQL (рыба/удочка)
 
-что искать
-trigram
+4. opensearch: HTTP REST JSON
+- фронтенд (нет)
+- max 10.000 записей
+- переполнение Integer/MAX_VALUE
+- JSON (нет ленивости)
 
-что угодно?
-jsonpath
-индексирование
+{result
+  {entities
+    [{}
+     {}
+     ...
+     {}]}}
 
-подзапросы и пути
 
-отчеты
+# Datomic
 
-утилиты и библиотеки
+- требует схему
+- версии
 
+v1
+{:good/id 1
+ :good/sku 52342
+ :good/title "Red cap"}
+
+:good/sku = :db.type/integer
+
+v2
+{:good/id 99
+ :good/sku "abc123x"
+ :good/title "T-shirt"}
+
+:good/sku = :db.type/string
 
 
 
@@ -122,4 +145,7 @@ jsonpath
 links
 
 - https://grishaev.me/json-sql/
+- https://grishaev.me/tag/sql/
+- https://grishaev.me/tag/postgres/
+
 - https://www.timescale.com/blog/optimizing-postgresql-performance-compression-pglz-vs-lz4

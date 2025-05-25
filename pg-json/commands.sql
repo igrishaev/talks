@@ -374,16 +374,43 @@ create index if not exists idx_doc_gin_jsonb_path
 -- slow
 -- subset
 
-
 create index if not exists idx_doc_gin_jsonb_path
     on docs using gin (doc['some']['attr'] jsonb_path_ops);
+
+
+
+
+/*
+id = ivan@acme.com
+and
+role = 'agent'
+*/
+
+
+where
+        doc @@ '$.reviewed.reviewers.id == "ivan@acme.com"'
+    and doc @@ '$.reviewed.reviewers.role == "agent"'
+
+
+@@ path exists
+^^^^^^^^^^^^^^
+
+$.reviewed[0].reviewers[0].id         -- ivan@acme.com     ok
+$.reviewed[0].reviewers[0].role       -- manager
+$.reviewed[0].reviewers[1].id         -- john@acme.com
+$.reviewed[0].reviewers[1].role       -- analytic
+$.reviewed[1].reviewers[0].id         -- marc@acme.com
+$.reviewed[1].reviewers[0].role       -- agent             ok
+$.reviewed[1].reviewers[1].id         -- ivan@acme.com
+$.reviewed[1].reviewers[1].role       -- accounter
+
 
 
 
 select doc['reviewed']
 from docs
 where doc @? '$.reviewed.reviewers ? (@.id == "ivan@acme.com" && @.role == "agent")';
-
+--        ^^
 
  [{"code": "dep-a-5", "reviewers":  [{"id": "john@acme.com", "role": null, "review": "need-more-data"}, {"id": "john@acme.com", "role": null, "review": "accept"}], "department": "Department A 5"}, {"code": "dep-b-5", "reviewers": [{"id": null, "role": "accounter", "review": null}, {"id": "ivan@acme.com", "role": "agent", "review": null}], "department": "Department B 5"}]
  [{"code": "dep-a-9", "reviewers":  [{"id": "ivan@acme.com", "role": "agent", "review": "need-more-data"}, {"id": "john@acme.com", "role": "agent", "review": "reject"}], "department": "Department A 9"}, {"code": "dep-b-9", "reviewers": [{"id": "ivan@acme.com", "role": "agent", "review": "need-more-data"}, {"id": null, "role": "accounter", "review": null}], "department": "Department B 9"}]
@@ -475,6 +502,218 @@ limit
     100
 offset
     350
+
+
+
+-- nested
+
+
+{:filter [:reviewed.reviewers
+           [:nested
+             [:= :id "ivan@acme.com"]
+             [:= :role "manager"]]]}
+
+where doc @? '$.reviewed.reviewers ? (@.id == "ivan@acme.com" && @.role == "manager")'
+
+-- wildcard
+
+create extension if not exists pg_trgm;
+
+
+create index if not exists idx_doc_inner_id_trgm on docs
+using gin ((doc #>> '{inner-id}') gin_trgm_ops);
+
+
+
+select id, doc #>> '{inner-id}'
+from docs
+where doc #>> '{inner-id}' ilike '%5555%'
+limit 100;
+
+
+                  id                  | ?column?
+--------------------------------------+----------
+ b4efffb8-18db-44f0-b486-ea3eb74b0ff5 | 5555
+ bd19cb30-1246-41a3-a0df-d71777604221 | 15555
+ d17ca3c1-4e8a-4973-8f24-c66013243e0b | 25555
+ 5e0b76a1-a157-48d6-8f12-8738564b64ea | 35555
+ 9de5cac9-10e1-4b56-b84e-b86cd497d988 | 45555
+ 90f93653-0a1d-47f9-8479-e27b5a38ffe0 | 55550
+ 1d3aac9f-6fdb-400a-8644-7368a7b32354 | 55551
+ b1e69e59-0c5b-424a-9595-6f19a824b907 | 55552
+ 7909a19a-1b3f-4b8b-afe7-15807e8ede7f | 55553
+ 368df7dc-4376-4f45-a2f5-5e4a96bc6b82 | 55554
+ 907ab831-8058-47e8-b61e-262efcc6def3 | 55555
+ 192d5fcd-2188-4f53-8f24-e7bc59a11a6c | 55556
+ 1c8e901c-4413-4130-87b5-7dfcd526ac1d | 55557
+ 60c671bb-3ab2-4c82-9366-a871b7e4748a | 55558
+ d2945a24-6a4c-46ed-b043-7383d967374d | 55559
+ bb5d18b2-5f4a-476f-b176-7ac7b5b24c41 | 65555
+ 4f64a8cf-a363-4af3-bdf0-dcd3b08e4320 | 75555
+ dba28834-512a-4ec7-8229-760a420d2280 | 85555
+ 8434b228-791d-4d6e-8d6c-cbb569151fe1 | 95555
+ 28adea61-b9ee-40fc-a380-b3dff72784a2 | 105555
+ a39804d9-8f15-4750-8c7b-977b5c365982 | 115555
+ 2523a58c-6ab3-41a7-9796-e29c46f36757 | 125555
+ 1571666b-80ba-471f-86bf-a82d4a79b4cc | 135555
+ db97bcfe-557f-4966-b882-0a7a9f2ec077 | 145555
+ e4dc3c5d-501c-4fa6-9112-3c027672e01f | 155550
+ 214afd9d-938a-4eff-ba25-63d680387688 | 155551
+
+
+
+                                                                QUERY PLAN
+-------------------------------------------------------------------------------------------------------------------------------------------
+ Limit  (cost=58.81..376.41 rows=100 width=48) (actual time=0.736..3.300 rows=100 loops=1)
+   ->  Bitmap Heap Scan on docs  (cost=58.81..25466.92 rows=8000 width=48) (actual time=0.734..3.292 rows=100 loops=1)
+         Recheck Cond: ((doc #>> '{inner-id}'::text[]) ~~* '%5555%'::text)
+         Rows Removed by Index Recheck: 1387
+         Heap Blocks: exact=665
+         ->  Bitmap Index Scan on idx_doc_inner_id_trgm  (cost=0.00..56.81 rows=8000 width=0) (actual time=0.508..0.508 rows=3700 loops=1)
+               Index Cond: ((doc #>> '{inner-id}'::text[]) ~~* '%5555%'::text)
+ Planning Time: 0.206 ms
+ Execution Time: 3.339 ms
+
+
+--
+-- search with scoring
+--
+
+
+               [part1]                            [part2]                             [part3]
+┌───────────────┬──────┬────────────┐                                                    ┌───────────────────────┐
+│               │  id  │   score    │                                                    │                       │
+│select by exact├──────┼────────────┤                                                    │                       │
+│     match     │  id  │   score    │                                                    │                       │
+│               ├──────┼────────────┤                                                    │                       │
+│               │  id  │   score    │                                ┌──────┬────────────┤                       │
+├───────────────┴──────┴────────────┤                                │  id  │   score    │                       │
+│               UNION               │                                ├──────┼────────────┤                       │
+├───────────────┬──────┬────────────┤    ┌───────────────────────┐   │  id  │   score    │inner JOIN docs        │
+│               │  id  │   score    │    │select                 │   ├──────┼────────────┤  on part2.id = doc.id │
+│   select by   ├──────┼────────────┤    │    id, min(score)     │   │  id  │   score    │order by               │
+│  similarity   │  id  │   score    │───▶│from                   │───▶──────┼────────────┤  score asc            │
+│               ├──────┼────────────┤    │    part1              │   │  id  │   score    │                       │
+│               │  id  │   score    │    │group by               │   ├──────┼────────────┤                       │
+├───────────────┴──────┴────────────┤    └───────────────────────┘   │  id  │   score    │                       │
+│               UNION               │                                ├──────┼────────────┤                       │
+├───────────────┬──────┬────────────┤                                │  id  │   score    │                       │
+│               │  id  │   score    │                                └──────┴────────────┤                       │
+│select by ilike├──────┼────────────┤                                                    │                       │
+│  / tsvector   │  id  │   score    │                                                    │                       │
+│               ├──────┼────────────┤                                                    │                       │
+│               │  id  │   score    │                                                    │                       │
+└───────────────┴──────┴────────────┘                                                    └───────────────────────┘
+
+
+--explain analyze
+select
+    sub.id,
+    sub.score,
+    docs.doc['inner-id']
+
+from (
+
+    select id, min(score) as score
+    from (
+
+        select sub.*
+        from (
+            select
+                id, 10 as score
+            from
+                docs
+            where
+                (doc #>> '{inner-id}')::int = 555
+            limit
+                10
+        ) as sub
+
+    UNION
+
+        select sub.*
+        from (
+            select
+                id, 20 as score
+            from
+                docs
+            where
+                (doc #>> '{inner-id}') ilike '%555%'
+        limit
+            10
+        ) as sub
+    ) as sub
+
+    group by id
+
+) as sub
+
+left join docs
+    on sub.id = docs.id
+order by
+    sub.score
+
+;
+
+
+                  id                  | score
+--------------------------------------+-------
+ 03acfaec-295f-446c-8ef2-7ad01c6fad85 |    20
+ 2c1c740d-797b-4601-a7a8-e4b993b33539 |    10
+ 368ef515-3916-4cfb-b8a4-74a8b06345a3 |    20
+ 3a2580b8-9a6e-4ef6-9443-00c2ae62959d |    20
+ 44ac7be6-711b-4fab-8f06-61e40b450f19 |    20
+ 485d8053-9fe6-4c82-8586-d38daf907df3 |    20
+ 7afa98cc-8e9c-4ff2-874f-155f77a6d668 |    20
+ 92c103ec-f6c9-42f0-8730-a751498aeac7 |    20
+ b4ad4c82-b533-4796-bc5f-b0ac3153b190 |    20
+ bc03bc26-aade-4c7f-bbe7-71ffbf40353f |    20
+ dfd78841-9cab-4dcd-bcd2-4d1ba3ad5c10 |    20
+
+
+
+                  id                  | score |  doc
+--------------------------------------+-------+--------
+ 2c1c740d-797b-4601-a7a8-e4b993b33539 |    10 | 555
+ 1fd180d1-450f-4dfd-a3bd-214fd64a70c3 |    20 | 109555
+ 22e6ab7c-37d3-4213-b8b9-529d20c09a7f |    20 | 107555
+ 29caea08-ea1f-4fb9-8db0-cddfee218daf |    20 | 108555
+ 2e3409bf-2a0c-41ba-8406-1ea90686ec85 |    20 | 113555
+ 63003f58-d689-4bd5-bedf-f998bbe3f2db |    20 | 110555
+ 694b7e44-f5d4-4b02-af5f-6775adef7aa4 |    20 | 114555
+ 6baa3ab1-6bc1-45fe-a1bc-462fc66c2b1c |    20 | 111555
+ c3111d89-178a-44bf-bb69-d21548fc3dbf |    20 | 115550
+ 0f2f1d85-ca01-4b43-8dfb-9d120c3d8806 |    20 | 106555
+ ced1ce94-dd98-4d2d-8e28-c94681cca124 |    20 | 112555
+
+
+
+
+                                                                                  QUERY PLAN
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Sort  (cost=137.43..137.46 rows=11 width=52) (actual time=16.412..16.415 rows=11 loops=1)
+   Sort Key: (min((10)))
+   Sort Method: quicksort  Memory: 25kB
+   ->  Nested Loop Left Join  (cost=44.55..137.24 rows=11 width=52) (actual time=16.182..16.394 rows=11 loops=1)
+         ->  GroupAggregate  (cost=44.12..44.37 rows=11 width=20) (actual time=16.119..16.133 rows=11 loops=1)
+               Group Key: docs_1.id
+               ->  Unique  (cost=44.12..44.21 rows=11 width=20) (actual time=16.102..16.111 rows=11 loops=1)
+                     ->  Sort  (cost=44.12..44.15 rows=11 width=20) (actual time=16.100..16.103 rows=11 loops=1)
+                           Sort Key: docs_1.id, (10)
+                           Sort Method: quicksort  Memory: 25kB
+                           ->  Append  (cost=0.42..43.93 rows=11 width=20) (actual time=0.041..16.070 rows=11 loops=1)
+                                 ->  Limit  (cost=0.42..8.44 rows=1 width=20) (actual time=0.040..0.042 rows=1 loops=1)
+                                       ->  Index Scan using idx_doc_inner_id_btree on docs docs_1  (cost=0.42..8.44 rows=1 width=20) (actual time=0.038..0.040 rows=1 loops=1)
+                                             Index Cond: (((doc #>> '{inner-id}'::text[]))::integer = 555)
+                                 ->  Limit  (cost=0.00..35.44 rows=10 width=20) (actual time=3.352..16.022 rows=10 loops=1)
+                                       ->  Seq Scan on docs docs_2  (cost=0.00..141745.00 rows=40000 width=20) (actual time=3.351..16.018 rows=10 loops=1)
+                                             Filter: ((doc #>> '{inner-id}'::text[]) ~~* '%555%'::text)
+                                             Rows Removed by Filter: 9944
+         ->  Index Scan using docs_pkey on docs  (cost=0.42..8.44 rows=1 width=976) (actual time=0.021..0.021 rows=1 loops=11)
+               Index Cond: (id = docs_1.id)
+ Planning Time: 0.593 ms
+ Execution Time: 16.585 ms
+(22 rows)
 
 
 -- map of index

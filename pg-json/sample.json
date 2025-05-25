@@ -42,7 +42,7 @@
       "reviewers": [
         {
           "id": "marc@acme.com",
-          "role": "manager",
+          "role": "agent",
           "review": "need-more-info",
           "created-at": "2023-03-03"
         },
