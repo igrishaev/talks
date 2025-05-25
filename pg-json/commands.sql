@@ -1,16 +1,21 @@
 
 
+-- prepare table
+
 create table docs (
     id uuid primary key,
     doc jsonb compression lz4 not null,
+--            ^^^^^^^^^^^^^^^
     created_at timestamp with time zone not null default current_timestamp,
     updated_at timestamp with time zone null
 );
 
--- pglz
--- https://www.timescale.com/blog/optimizing-postgresql-performance-compression-pglz-vs-lz4
+
+-- review data samle
 
 
+
+-- generate data
 
 do $$
 
@@ -758,7 +763,23 @@ order by
 
 
 
+   1. select exact     2. select ilike   3. select tsvector                         inner join docs by id
 
+┌──────┬────────────┬ ─ ─ ─┌ ─ ─ ─ ─ ─ ─┌ ─ ─ ─┌ ─ ─ ─ ─ ─ ─        ┌──────┬────────────┐      ┌──────┬─────────────────────────┐
+│  id  │   score    │      │            │      │            │       │  id  │   score    │      │  id  │        document         │
+├──────┼────────────┼ ─ ─ ─├ ─ ─ ─ ─ ─ ─├──────┼────────────┐       ├──────┼────────────┤      ├──────┼─────────────────────────┤
+│  id  │   score    │      │            │  id  │   score    │       │  id  │   score    │      │  id  │        document         │
+├──────┼────────────┼──────┼────────────┼──────┼────────────┤       ├──────┼────────────┤      ├──────┼─────────────────────────┤
+│  id  │   score    │  id  │   score    │  id  │   score    │ ─────▶│  id  │   score    │◀─────│  id  │        document         │
+├──────┼────────────┼──────┼────────────┼──────┼────────────┤       ├──────┼────────────┤      ├──────┼─────────────────────────┤
+│  id  │   score    │  id  │   score    │  id  │   score    │       │  id  │   score    │      │  id  │        document         │
+├──────┼────────────┼──────┼────────────┼──────┼────────────┤       ├──────┼────────────┤      ├──────┼─────────────────────────┤
+       │            │  id  │   score    │  id  │   score    │       │  id  │   score    │      │  id  │        document         │
+├ ─ ─ ─├ ─ ─ ─ ─ ─ ─├──────┼────────────┼──────┼────────────┘       ├──────┼────────────┤      ├──────┼─────────────────────────┤
+       │            │  id  │   score    │      │            │       │  id  │   score    │      │  id  │        document         │
+└ ─ ─ ─└ ─ ─ ─ ─ ─ ─└──────┴────────────┴ ─ ─ ─└ ─ ─ ─ ─ ─ ─        └──────┴────────────┘      └──────┴─────────────────────────┘
+
+                                                                                      order by score asc
 
 -- map of index
 
