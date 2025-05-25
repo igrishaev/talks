@@ -375,7 +375,7 @@ create index if not exists idx_doc_gin_jsonb_path
 -- subset
 
 create index if not exists idx_doc_gin_jsonb_path
-    on docs using gin (doc['some']['attr'] jsonb_path_ops);
+    on docs using gin (doc['subset'] jsonb_path_ops);
 
 
 
@@ -583,8 +583,8 @@ limit 100;
                [part1]                            [part2]                             [part3]
 ┌───────────────┬──────┬────────────┐                                                    ┌───────────────────────┐
 │               │  id  │   score    │                                                    │                       │
-│select by exact├──────┼────────────┤                                                    │                       │
-│     match     │  id  │   score    │                                                    │                       │
+│exact match    ├──────┼────────────┤                                                    │                       │
+│               │  id  │   score    │                                                    │                       │
 │               ├──────┼────────────┤                                                    │                       │
 │               │  id  │   score    │                                ┌──────┬────────────┤                       │
 ├───────────────┴──────┴────────────┤                                │  id  │   score    │                       │
@@ -592,21 +592,21 @@ limit 100;
 ├───────────────┬──────┬────────────┤    ┌───────────────────────┐   │  id  │   score    │inner JOIN docs        │
 │               │  id  │   score    │    │select                 │   ├──────┼────────────┤  on part2.id = doc.id │
 │   select by   ├──────┼────────────┤    │    id, min(score)     │   │  id  │   score    │order by               │
-│  similarity   │  id  │   score    │───▶│from                   │───▶──────┼────────────┤  score asc            │
+│  like         │  id  │   score    │───▶│from                   │───▶──────┼────────────┤  score asc            │
 │               ├──────┼────────────┤    │    part1              │   │  id  │   score    │                       │
-│               │  id  │   score    │    │group by               │   ├──────┼────────────┤                       │
+│               │  id  │   score    │    │group by id            │   ├──────┼────────────┤                       │
 ├───────────────┴──────┴────────────┤    └───────────────────────┘   │  id  │   score    │                       │
 │               UNION               │                                ├──────┼────────────┤                       │
 ├───────────────┬──────┬────────────┤                                │  id  │   score    │                       │
 │               │  id  │   score    │                                └──────┴────────────┤                       │
-│select by ilike├──────┼────────────┤                                                    │                       │
-│  / tsvector   │  id  │   score    │                                                    │                       │
+│similarity     ├──────┼────────────┤                                                    │                       │
+│or tsvector    │  id  │   score    │                                                    │                       │
 │               ├──────┼────────────┤                                                    │                       │
 │               │  id  │   score    │                                                    │                       │
 └───────────────┴──────┴────────────┘                                                    └───────────────────────┘
 
 
---explain analyze
+-- explain analyze
 select
     sub.id,
     sub.score,
@@ -624,7 +624,7 @@ from (
             from
                 docs
             where
-                (doc #>> '{inner-id}')::int = 555
+                (doc #>> '{inner-id}') = '555'
             limit
                 10
         ) as sub
@@ -642,6 +642,22 @@ from (
         limit
             10
         ) as sub
+
+    UNION
+
+        select sub.*
+        from (
+            select
+                id, 30 as score
+            from
+                docs
+            where
+                -- set pg_trgm.similarity_threshold=0.5;
+                (doc #>> '{inner-id}') % '555'
+        limit
+            10
+        ) as sub
+
     ) as sub
 
     group by id
@@ -652,68 +668,96 @@ left join docs
     on sub.id = docs.id
 order by
     sub.score
-
 ;
 
 
                   id                  | score
 --------------------------------------+-------
- 03acfaec-295f-446c-8ef2-7ad01c6fad85 |    20
- 2c1c740d-797b-4601-a7a8-e4b993b33539 |    10
- 368ef515-3916-4cfb-b8a4-74a8b06345a3 |    20
- 3a2580b8-9a6e-4ef6-9443-00c2ae62959d |    20
- 44ac7be6-711b-4fab-8f06-61e40b450f19 |    20
- 485d8053-9fe6-4c82-8586-d38daf907df3 |    20
- 7afa98cc-8e9c-4ff2-874f-155f77a6d668 |    20
- 92c103ec-f6c9-42f0-8730-a751498aeac7 |    20
- b4ad4c82-b533-4796-bc5f-b0ac3153b190 |    20
- bc03bc26-aade-4c7f-bbe7-71ffbf40353f |    20
- dfd78841-9cab-4dcd-bcd2-4d1ba3ad5c10 |    20
+ 097cfa50-7baf-477e-8dd0-5c78a54bb116 |    20
+ 32031cd9-284a-4a33-8af8-f0eae7da63a6 |    20
+ 32031cd9-284a-4a33-8af8-f0eae7da63a6 |    30
+ 3ce9e657-9579-4c33-bbfb-62c2532e3068 |    30
+ 437dcd20-cb39-49e2-8e28-f4160a3fdfb5 |    10
+ 437dcd20-cb39-49e2-8e28-f4160a3fdfb5 |    20
+ 437dcd20-cb39-49e2-8e28-f4160a3fdfb5 |    30
+ 6c9b89fd-4518-4445-b2b2-81ec4fda88b6 |    20
+ 6c9b89fd-4518-4445-b2b2-81ec4fda88b6 |    30
+ 7848ba20-160a-41f4-8087-6dbf998c17c2 |    30
+ 8ac6deda-27b8-431d-94d0-460d5220e214 |    20
+ 94143e2a-f41c-4df7-a26d-379ea0e7ef2f |    20
+ 980cd80b-a02d-4938-91c9-48114c82a285 |    20
+ 980cd80b-a02d-4938-91c9-48114c82a285 |    30
+ 9814293b-4e9e-4362-ad87-a5884fe62e52 |    20
+ 9814293b-4e9e-4362-ad87-a5884fe62e52 |    30
+ 9999e2b9-a5e2-4d9b-8929-8fdecc056f8c |    30
+ 9aa8ceba-858c-47d2-bf9b-d088e7ae2d1d |    20
+ a76aa321-cba5-442a-a24c-301aba848eb6 |    20
+ a76aa321-cba5-442a-a24c-301aba848eb6 |    30
+ ab9ea9cd-6231-4405-96be-4a28faa8b490 |    30
 
 
 
-                  id                  | score |  doc
---------------------------------------+-------+--------
- 2c1c740d-797b-4601-a7a8-e4b993b33539 |    10 | 555
- 1fd180d1-450f-4dfd-a3bd-214fd64a70c3 |    20 | 109555
- 22e6ab7c-37d3-4213-b8b9-529d20c09a7f |    20 | 107555
- 29caea08-ea1f-4fb9-8db0-cddfee218daf |    20 | 108555
- 2e3409bf-2a0c-41ba-8406-1ea90686ec85 |    20 | 113555
- 63003f58-d689-4bd5-bedf-f998bbe3f2db |    20 | 110555
- 694b7e44-f5d4-4b02-af5f-6775adef7aa4 |    20 | 114555
- 6baa3ab1-6bc1-45fe-a1bc-462fc66c2b1c |    20 | 111555
- c3111d89-178a-44bf-bb69-d21548fc3dbf |    20 | 115550
- 0f2f1d85-ca01-4b43-8dfb-9d120c3d8806 |    20 | 106555
- ced1ce94-dd98-4d2d-8e28-c94681cca124 |    20 | 112555
-
+                  id                  | score | doc
+--------------------------------------+-------+------
+ 437dcd20-cb39-49e2-8e28-f4160a3fdfb5 |    10 | 555
+ 32031cd9-284a-4a33-8af8-f0eae7da63a6 |    20 | 5554
+ 097cfa50-7baf-477e-8dd0-5c78a54bb116 |    20 | 1555
+ 980cd80b-a02d-4938-91c9-48114c82a285 |    20 | 5551
+ 9814293b-4e9e-4362-ad87-a5884fe62e52 |    20 | 5550
+ 9aa8ceba-858c-47d2-bf9b-d088e7ae2d1d |    20 | 3555
+ a76aa321-cba5-442a-a24c-301aba848eb6 |    20 | 5552
+ 6c9b89fd-4518-4445-b2b2-81ec4fda88b6 |    20 | 5553
+ 8ac6deda-27b8-431d-94d0-460d5220e214 |    20 | 4555
+ 94143e2a-f41c-4df7-a26d-379ea0e7ef2f |    20 | 2555
+ 3ce9e657-9579-4c33-bbfb-62c2532e3068 |    30 | 5556
+ ab9ea9cd-6231-4405-96be-4a28faa8b490 |    30 | 5557
+ 7848ba20-160a-41f4-8087-6dbf998c17c2 |    30 | 55
+ 9999e2b9-a5e2-4d9b-8929-8fdecc056f8c |    30 | 5555
 
 
 
                                                                                   QUERY PLAN
 -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
- Sort  (cost=137.43..137.46 rows=11 width=52) (actual time=16.412..16.415 rows=11 loops=1)
+ Sort  (cost=368.37..368.42 rows=21 width=52) (actual time=10.561..10.566 rows=14 loops=1)
    Sort Key: (min((10)))
    Sort Method: quicksort  Memory: 25kB
-   ->  Nested Loop Left Join  (cost=44.55..137.24 rows=11 width=52) (actual time=16.182..16.394 rows=11 loops=1)
-         ->  GroupAggregate  (cost=44.12..44.37 rows=11 width=20) (actual time=16.119..16.133 rows=11 loops=1)
+   ->  Nested Loop Left Join  (cost=190.57..367.91 rows=21 width=52) (actual time=10.433..10.553 rows=14 loops=1)
+         ->  GroupAggregate  (cost=190.14..190.62 rows=21 width=20) (actual time=10.404..10.427 rows=14 loops=1)
                Group Key: docs_1.id
-               ->  Unique  (cost=44.12..44.21 rows=11 width=20) (actual time=16.102..16.111 rows=11 loops=1)
-                     ->  Sort  (cost=44.12..44.15 rows=11 width=20) (actual time=16.100..16.103 rows=11 loops=1)
+               ->  Unique  (cost=190.14..190.30 rows=21 width=20) (actual time=10.392..10.407 rows=21 loops=1)
+                     ->  Sort  (cost=190.14..190.20 rows=21 width=20) (actual time=10.391..10.396 rows=21 loops=1)
                            Sort Key: docs_1.id, (10)
                            Sort Method: quicksort  Memory: 25kB
-                           ->  Append  (cost=0.42..43.93 rows=11 width=20) (actual time=0.041..16.070 rows=11 loops=1)
-                                 ->  Limit  (cost=0.42..8.44 rows=1 width=20) (actual time=0.040..0.042 rows=1 loops=1)
-                                       ->  Index Scan using idx_doc_inner_id_btree on docs docs_1  (cost=0.42..8.44 rows=1 width=20) (actual time=0.038..0.040 rows=1 loops=1)
-                                             Index Cond: (((doc #>> '{inner-id}'::text[]))::integer = 555)
-                                 ->  Limit  (cost=0.00..35.44 rows=10 width=20) (actual time=3.352..16.022 rows=10 loops=1)
-                                       ->  Seq Scan on docs docs_2  (cost=0.00..141745.00 rows=40000 width=20) (actual time=3.351..16.018 rows=10 loops=1)
-                                             Filter: ((doc #>> '{inner-id}'::text[]) ~~* '%555%'::text)
-                                             Rows Removed by Filter: 9944
-         ->  Index Scan using docs_pkey on docs  (cost=0.42..8.44 rows=1 width=976) (actual time=0.021..0.021 rows=1 loops=11)
+                           ->  Append  (cost=46.61..189.68 rows=21 width=20) (actual time=2.961..10.336 rows=21 loops=1)
+                                 ->  Limit  (cost=46.61..50.63 rows=1 width=20) (actual time=2.960..3.016 rows=1 loops=1)
+                                       ->  Bitmap Heap Scan on docs docs_1  (cost=46.61..50.63 rows=1 width=20) (actual time=2.958..3.014 rows=1 loops=1)
+                                             Recheck Cond: ((doc #>> '{inner-id}'::text[]) = '555'::text)
+                                             Rows Removed by Index Recheck: 21
+                                             Heap Blocks: exact=22
+                                             ->  Bitmap Index Scan on idx_doc_inner_id_trgm  (cost=0.00..46.61 rows=1 width=0) (actual time=2.928..2.928 rows=22 loops=1)
+                                                   Index Cond: ((doc #>> '{inner-id}'::text[]) = '555'::text)
+                                 ->  Limit  (cost=13.21..52.51 rows=10 width=20) (actual time=1.158..1.209 rows=10 loops=1)
+                                       ->  Bitmap Heap Scan on docs docs_2  (cost=13.21..406.28 rows=100 width=20) (actual time=1.158..1.208 rows=10 loops=1)
+                                             Recheck Cond: ((doc #>> '{inner-id}'::text[]) ~~* '%555%'::text)
+                                             Heap Blocks: exact=7
+                                             ->  Bitmap Index Scan on idx_doc_inner_id_trgm  (cost=0.00..13.18 rows=100 width=0) (actual time=0.822..0.822 rows=3700 loops=1)
+                                                   Index Cond: ((doc #>> '{inner-id}'::text[]) ~~* '%555%'::text)
+                                 ->  Limit  (cost=47.13..86.44 rows=10 width=20) (actual time=5.958..6.105 rows=10 loops=1)
+                                       ->  Bitmap Heap Scan on docs docs_3  (cost=47.13..440.20 rows=100 width=20) (actual time=5.957..6.103 rows=10 loops=1)
+                                             Recheck Cond: ((doc #>> '{inner-id}'::text[]) % '555'::text)
+                                             Rows Removed by Index Recheck: 68
+                                             Heap Blocks: exact=20
+                                             ->  Bitmap Index Scan on idx_doc_inner_id_trgm  (cost=0.00..47.11 rows=100 width=0) (actual time=5.089..5.089 rows=13079 loops=1)
+                                                   Index Cond: ((doc #>> '{inner-id}'::text[]) % '555'::text)
+         ->  Index Scan using docs_pkey on docs  (cost=0.42..8.44 rows=1 width=976) (actual time=0.008..0.008 rows=1 loops=14)
                Index Cond: (id = docs_1.id)
- Planning Time: 0.593 ms
- Execution Time: 16.585 ms
-(22 rows)
+ Planning Time: 0.821 ms
+ Execution Time: 10.657 ms
+(35 rows)
+
+
+
+
 
 
 -- map of index

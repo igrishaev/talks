@@ -139,13 +139,49 @@ v2
 :good/sku = :db.type/string
 
 
+# Why Postgres
+
+- бесплатно
+- легкость в развертке
+- скорее всего уже есть
+- Postgres Pro
+- https://postgrespro.ru/education/books
+- документация
+- SQL
 
 
 
-links
+# Summary
 
-- https://grishaev.me/json-sql/
-- https://grishaev.me/tag/sql/
-- https://grishaev.me/tag/postgres/
+- no more "tables vs documents"
+- Jsonb Postgres
+- index (btree, trigram, ts_vector)
+- complex search (no map/reduce)
+- reports
+- SQL
 
-- https://www.timescale.com/blog/optimizing-postgresql-performance-compression-pglz-vs-lz4
+
+
+
+# Links
+
+Как наполнить базу сгенерированным JSON
+https://grishaev.me/json-sql/
+
+SQL posts
+https://grishaev.me/tag/sql/
+
+Postgres posts
+https://grishaev.me/tag/postgres/
+
+Optimizing PostgreSQL Performance & Compression: pglz vs. LZ4
+https://www.timescale.com/blog/optimizing-postgresql-performance-compression-pglz-vs-lz4
+
+Postgres как поисковый движок
+https://habr.com/ru/companies/sravni/articles/888534/
+
+Postgres as a search engine
+https://anyblockers.com/posts/postgres-as-a-search-engine
+
+Hybrid search
+https://supabase.com/docs/guides/ai/hybrid-search
