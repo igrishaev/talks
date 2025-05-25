@@ -24,10 +24,11 @@ json
 # характеристики товаров
 
 
-| sku   | title | description | category | subcategory |
-|-------|-------|-------------|----------|-------------|
-| 51231 |       |             |          |             |
-| 62344 |       |             |          |             |
+| sku   | title     | description            | category | subcategory |
+|-------|-----------|------------------------|----------|-------------|
+| 51231 | cap       | Red Abibas Cap         | cloth    | Sport cloth |
+| 62344 | tea spoon | Small silver tea spoon | kitchen  | dishes      |
+
 
 
 image
@@ -35,22 +36,26 @@ image
 
 
 
-
-
 # транзакции (PayPal, Apple)
 
-
-
+- large
+- s3?
+- reports
 
 
 # модели и стандарты
 
+- fhir
+- business
+- legacy (mongo, open search)
 
 
-антипримеры
+# антипримеры
+
+- data field
 
 
-раньше
+# раньше
 
 
 JsonField (Django)
@@ -68,26 +73,23 @@ model.save()
 ~~~
 
 
-json vs jsonb
+# json vs jsonb
 
 операторы
-
-
 модели
 
 
-переезд
+# переезд
 
 OpenSearch
-
 про датомик
 
-почему
+# почему
 
-дорогой
-транзакции
-проекции
-sql
+1. дорогой
+2. транзакции
+3. проекции
+4. sql
 
 таблица
 
