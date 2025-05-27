@@ -1,6 +1,12 @@
 
+--
+-- sample.json
+--
 
+
+--
 -- prepare table
+--
 
 create table docs (
     id uuid primary key,
@@ -11,11 +17,10 @@ create table docs (
 );
 
 
--- review data samle
 
-
-
+--
 -- generate data
+--
 
 do $$
 
@@ -95,8 +100,9 @@ from
 
 end $$;
 
--- 1M = 22 seconds
-
+--  1M = 22 seconds
+-- 20M =  6 minutes
+-- 50M = 15 minutes
 
 select count(*) from docs;
  count
@@ -127,6 +133,9 @@ select id from docs limit 100;
  9aa34689-00dd-4e00-85ac-7f0f1b8d1750
  7ed74b0d-a48a-4ff1-a430-599306f82794
  431f0477-4343-4101-97fa-38acd9a268c1
+
+
+-- get by id
 
 select jsonb_pretty(doc) from docs
 where id = '0001c6af-9c30-4c7b-b6b6-8d9d1e75e417'
@@ -163,6 +172,8 @@ where id = '0001c6af-9c30-4c7b-b6b6-8d9d1e75e417'
 
 
 
+-- query fields
+
 select
     id,
 
@@ -177,7 +188,8 @@ select
 
     created_at
 
-    from docs
+from
+    docs
 
 limit
     10;
@@ -213,7 +225,8 @@ select
 
     created_at
 
-    from docs
+from
+    docs
 
 limit
     10
@@ -236,6 +249,8 @@ offset
  5ce2b724-61d5-4ce7-9661-5163f067376d | 9            | Client 300009 Inc | client-300009  | 2025-05-24 17:15:32.249349+03
 
 
+-- index: requested-by.short-code
+
 
 create index if not exists idx_doc_requested_by_short_code_btree
     on docs using btree ((doc #>> '{requested-by,short-code}'));
@@ -256,6 +271,13 @@ where doc #>> '{requested-by,short-code}' = 'client-300004';
 (7 rows)
 
 
+--
+-- order by
+-- btree < = >
+--
+
+
+
 select
     id,
 
@@ -266,8 +288,10 @@ select
     as requester_code
 
 from docs
-order by doc #>> '{requested-by,short-code}' desc
-limit 100;
+order by
+    doc #>> '{requested-by,short-code}' desc
+limit
+    100;
 
 
                   id                  |  requester_name  | requester_code
@@ -289,6 +313,8 @@ limit 100;
  Execution Time: 0.174 ms
 (4 rows)
 
+
+-- index with int
 
 create index if not exists idx_doc_inner_id_btree
     on docs using btree (((doc #>> '{inner-id}')::int));
@@ -332,32 +358,33 @@ limit 100;
  Execution Time: 0.234 ms
 
 
--- JSON path
+--
+-- list/map of indexed attributes
+--
 
 
-json @@ 'special language'
+-- 1. support any path? (like OpenSearch)
+-- 2. paths with arrays [{users: [{...}]}]
+
+
+--
+-- JSON path language! (like XPath)
+-- before: jsQuery (Wargaming)
+--
+
+
+
+json @@ 'json path predicate'
+json @? 'json path with subquery'
+
+-- ^^^ trobubles with JDBC
 
 
 doc @@ '$.reviewed.reviewers.id == "ivan@acme.com"'
 
 
+
 explain analyze
-select doc['reviewed']
-from docs
-where doc @@ '$.reviewed.reviewers.id == "ivan@acme.com"'
-limit 100;
-
-
-                                                   QUERY PLAN
-----------------------------------------------------------------------------------------------------------------
- Limit  (cost=0.00..15.08 rows=100 width=32) (actual time=0.036..0.278 rows=100 loops=1)
-   ->  Seq Scan on docs  (cost=0.00..61709.00 rows=409091 width=32) (actual time=0.035..0.267 rows=100 loops=1)
-         Filter: (doc @@ '($."reviewed"."reviewers"."id" == "ivan@acme.com")'::jsonpath)
-         Rows Removed by Filter: 20
- Planning Time: 0.449 ms
- Execution Time: 0.302 ms
-
-
 select doc['reviewed']
 from docs
 where doc @@ '$.reviewed.reviewers.id == "ivan@acme.com"'
@@ -372,23 +399,50 @@ where doc @@ '$.reviewed.reviewers.id == "ivan@acme.com"'
  Execution Time: 315.248 ms
 
 
+-- lax vs strict
+
+doc @@ 'lax $.reviewed.reviewers.id == "ivan@acme.com"'
+
+doc @@ 'strict $.reviewed[*].reviewers[*].id == "ivan@acme.com"'
+
+-- doesn't work with nested arrays like [*][*]
+
+
+
+-- index jsonb_path_ops
+
 create index if not exists idx_doc_gin_jsonb_path
     on docs using gin (doc jsonb_path_ops);
 
 
--- slow
+btree: < <= = >= >
+
+$.reviewed[0].reviewers[0].id   ...
+$.reviewed[0].reviewers[0].name ...
+$.reviewed[0].reviewers[1].id   ...
+$.reviewed[0].reviewers[1].name ...
+$.reviewed[1].reviewers[0].id   ...
+$.reviewed[1].reviewers[0].name ...
+$.reviewed[1].reviewers[1].id   ...
+$.reviewed[2].reviewers[1].name ...
+
+
 -- subset
+
 
 create index if not exists idx_doc_gin_jsonb_path
     on docs using gin (doc['subset'] jsonb_path_ops);
 
 
+--
+-- subqueries
+--
 
 
 /*
-id = ivan@acme.com
-and
-role = 'agent'
+    id = ivan@acme.com
+    and
+    role = 'agent'
 */
 
 
@@ -396,19 +450,27 @@ where
         doc @@ '$.reviewed.reviewers.id == "ivan@acme.com"'
     and doc @@ '$.reviewed.reviewers.role == "agent"'
 
+^^^^^^^^^^^^^^
+
+
+
+$.reviewed[0].reviewers[0].id         -- ivan@acme.com     ok
+$.reviewed[0].reviewers[1].id         -- john@acme.com
+$.reviewed[1].reviewers[0].id         -- marc@acme.com
+$.reviewed[1].reviewers[1].id         -- ivan@acme.com
+
+
+$.reviewed[0].reviewers[0].role       -- manager
+$.reviewed[0].reviewers[1].role       -- analytic
+$.reviewed[1].reviewers[0].role       -- agent             ok
+$.reviewed[1].reviewers[1].role       -- accounter
+
+
+-- the same as OpenSearch
+
 
 @@ path exists
 ^^^^^^^^^^^^^^
-
-$.reviewed[0].reviewers[0].id         -- ivan@acme.com     ok
-$.reviewed[0].reviewers[0].role       -- manager
-$.reviewed[0].reviewers[1].id         -- john@acme.com
-$.reviewed[0].reviewers[1].role       -- analytic
-$.reviewed[1].reviewers[0].id         -- marc@acme.com
-$.reviewed[1].reviewers[0].role       -- agent             ok
-$.reviewed[1].reviewers[1].id         -- ivan@acme.com
-$.reviewed[1].reviewers[1].role       -- accounter
-
 
 
 
@@ -427,6 +489,8 @@ where doc @? '$.reviewed.reviewers ? (@.id == "ivan@acme.com" && @.role == "agen
  [{"code": "dep-a-19", "reviewers": [{"id": null, "role": "agent", "review": "accept"}, {"id": null, "role": "owner", "review": "reject"}], "department": "Department A 19"}, {"code": "dep-b-19", "reviewers": [{"id": null, "role": null, "review": "need-more-data"}, {"id": "ivan@acme.com", "role": "agent", "review": "need-more-data"}], "department": "Department B 19"}]
 
 
+-- by department
+
 
 select doc['reviewed']
 from docs
@@ -442,17 +506,19 @@ where doc @? '$.reviewed ? (@.code == "dep-a-18").reviewers ? (@.id == "ivan@acm
 
 -- honeysql samples
 
-(sql/register-op! :==)  -- ==
-[:== foo bar] -> 'foo == bar'
+(sql/register-op! :==)
+
+[:== foo bar]
+'foo == bar'
 
 (into [:||]
       (for [v value]
         [:== [:raw "@"] [:raw (util/to-json v)]]))
 
-'@.foo == 1 || @.bar == 2 || @.lol == 3'
+'(@.foo == 1) || (@.bar == 2) || (@.lol == 3)'
 
 
-'@.foo == 1 && @.bar == 2 && @.lol == 3'
+'(@.foo == 1) && (@.bar == 2) && (@.lol == 3)'
 
 
 (sql/register-fn!
@@ -462,11 +528,16 @@ where doc @? '$.reviewed ? (@.code == "dep-a-18").reviewers ? (@.id == "ivan@acm
      (sql/format-expr [:nest [:#>> field array]]))))
 
 
-[:json#>> field [:requested-by :id]]
+[:json#>> doc [:requested-by :id]]
 
-'field #>> {requested-by,id}}'
+'doc #>> {requested-by,id}}'
 
 
+
+-- DLS b/w services
+
+-- DSL -> OpenSearch
+-- DSL -> Postgres
 
 
 {:filter [:and
@@ -491,6 +562,8 @@ where doc @? '$.reviewed ? (@.code == "dep-a-18").reviewers ? (@.id == "ivan@acm
  :order-by
  [[:json>> :attrs.created-at ] :desc]}
 
+
+-- final SQL
 
 select
     id, doc
@@ -520,10 +593,15 @@ offset
 
 where doc @? '$.reviewed.reviewers ? (@.id == "ivan@acme.com" && @.role == "manager")'
 
--- wildcard
+--
+-- wildcard (contains)
+--
 
 create extension if not exists pg_trgm;
 
+
+
+-- it's integer but we need ilike!
 
 create index if not exists idx_doc_inner_id_trgm on docs
 using gin ((doc #>> '{inner-id}') gin_trgm_ops);
@@ -580,9 +658,51 @@ limit 100;
  Execution Time: 3.339 ms
 
 
+
+-- search by many fields
+
+doc #>> '{client.name}' ilike '%pattern%'
+OR
+doc #>> '{client,description}' ilike '%pattern%'
+OR
+doc #>> '{client,department}' ilike '%pattern%'
+
+
+create index ... on docs
+    (             coalesce(doc #>> '{client.name}', '')
+        || ' ' || coalesce(doc #>> '{client.description}', '')
+        || ' ' || coalesce(doc #>> '{client.department}', '')
+    trgm_opt
+    )
+
+...
+
+where
+    (            coalesce(doc #>> '{client.name}', '')
+        || ' ' || coalesce(doc #>> '{client.description}', '')
+        || ' ' || coalesce(doc #>> '{client.department}', '')
+
+    ) ilike '%pattern%'
+
+
+
+
+
+
+
+
+
 --
 -- search with scoring
 --
+
+-- 1: exact match
+-- 2: contains
+-- 3: fuzzy
+
+
+
+
 
 
                [part1]                            [part2]                             [part3]
@@ -679,10 +799,10 @@ order by
                   id                  | score
 --------------------------------------+-------
  097cfa50-7baf-477e-8dd0-5c78a54bb116 |    20
- 32031cd9-284a-4a33-8af8-f0eae7da63a6 |    20
- 32031cd9-284a-4a33-8af8-f0eae7da63a6 |    30
+ 32031cd9-284a-4a33-8af8-f0eae7da63a6 |    20 -- duplicate
+ 32031cd9-284a-4a33-8af8-f0eae7da63a6 |    30 -- duplicate
  3ce9e657-9579-4c33-bbfb-62c2532e3068 |    30
- 437dcd20-cb39-49e2-8e28-f4160a3fdfb5 |    10
+ 437dcd20-cb39-49e2-8e28-f4160a3fdfb5 |    10 -- exact
  437dcd20-cb39-49e2-8e28-f4160a3fdfb5 |    20
  437dcd20-cb39-49e2-8e28-f4160a3fdfb5 |    30
  6c9b89fd-4518-4445-b2b2-81ec4fda88b6 |    20
@@ -781,11 +901,11 @@ order by
 
                                                                                       order by score asc
 
--- map of index
 
 
--- reports
--- jsonb_query_elements
+--
+-- reports (CSV/Excel)
+--
 
 select
     id,
@@ -846,6 +966,12 @@ limit 100;
  7009bcab-cf93-44e4-955b-003751282cbb | 184200 | lir      | 13 years
 
 
+-- one level at once
+-- select from (select from (select from ...))
+
+
+-- 17: json_table
+
 select
     id,
     flatten.*
@@ -856,21 +982,24 @@ from
         requested_id int path '$."requested-by".id',
         requested_short_name text path '$."requested-by"."short-name"',
         requested_short_code text path '$."requested-by"."short-code"',
-        nested path '$.reviewed[*]' columns (
-            dep_id for ordinality,
+        nested path '$.reviewed[*]' columns (             -- nested
+            dep_id for ordinality,                        -- surrogate id
             dep_name text path '$.department',
             dep_code text path '$.code',
-            nested path '$.reviewers[*]' columns(
-                review_id for ordinality,
+            nested path '$.reviewers[*]' columns(         -- nested
+                review_id for ordinality,                 -- surrogate id
                 user_id text path '$.id',
                 role text path '$.role',
                 review text path '$.review',
-                review_date date path '$."created-at"' -- !!!
+                review_date date path '$."created-at"'    -- date
             )
         )
     )) as flatten
 limit
     1000;
+
+
+-- out1.sql
 
 
 create materialized view mv_docs_flatten as
@@ -907,7 +1036,7 @@ select * from mv_docs_flatten;
 refresh materialized view mv_docs_flatten;
 
 
-pg_cron !!!
+--- pg_cron !!!
 
 
 select cron.schedule(

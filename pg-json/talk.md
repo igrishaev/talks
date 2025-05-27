@@ -1,16 +1,147 @@
 
 
-PostgreSQL как эффективная база для документных данных
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+PostgreSQL как документная база данных
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+SQL: tables & relations
+
+table -> ? -> table
 
 
-# зачем JSON?
+ id       title       name           select id, name        where id in (10, 20)
 
-- вложенность
+┌────┬─────────────┬──────────┐      ┌────┬──────────┐     ┌ ─ ─┌ ─ ─ ─ ─ ─
+│    │             │          │      │    │          │          │          │
+├────┼─────────────┼──────────┤      ├────┼──────────┤     ├ ─ ─├ ─ ─ ─ ─ ─
+│    │             │          │      │    │          │          │          │
+├────┼─────────────┼──────────┤      ├────┼──────────┤     ├────┼──────────┐    ┌────┬──────────┐
+│    │             │          │      │    │          │     │    │          │    │    │          │
+├────┼─────────────┼──────────┤      ├────┼──────────┤     ├────┼──────────┤    ├────┼──────────┤
+│    │             │          │      │    │          │     │    │          │    │    │          │
+├────┼─────────────┼──────────┤      ├────┼──────────┤     ├────┼──────────┘    └────┴──────────┘
+│    │             │          │      │    │          │          │          │
+├────┼─────────────┼──────────┤      ├────┼──────────┤     ├ ─ ─├ ─ ─ ─ ─ ─
+│    │             │          │      │    │          │          │          │
+├────┼─────────────┼──────────┤      ├────┼──────────┤     ├ ─ ─├ ─ ─ ─ ─ ─
+│    │             │          │      │    │          │          │          │
+├────┼─────────────┼──────────┤      ├────┼──────────┤     ├ ─ ─├ ─ ─ ─ ─ ─
+│    │             │          │      │    │          │          │          │
+└────┴─────────────┴──────────┘      └────┴──────────┘     └ ─ ─└ ─ ─ ─ ─ ─
+
+
+
+table1                           join  table3                join  table3
+
+
+                                                            ┌ ─ ─┌ ─ ─ ─ ─ ─ ─ ┬ ─ ─ ─ ─ ─
+                                                                 │                        │
+                                                            ├ ─ ─├ ─ ─ ─ ─ ─ ─ ┼ ─ ─ ─ ─ ─
+                                                                 │                        │
+┌ ─ ─┌ ─ ─ ─ ─ ─ ─ ┬ ─ ─ ─ ─ ─                              ├ ─ ─├ ─ ─ ─ ─ ─ ─ ┼ ─ ─ ─ ─ ─
+     │                        │                                  │                        │
+├ ─ ─├ ─ ─ ─ ─ ─ ─ ┼ ─ ─ ─ ─ ─                              ├ ─ ─├ ─ ─ ─ ─ ─ ─ ┼ ─ ─ ─ ─ ─
+     │                        │                                  │                        │
+├ ─ ─├ ─ ─ ─ ─ ─ ─ ┼ ─ ─ ─ ─ ─                              ├ ─ ─├ ─ ─ ─ ─ ─ ─ ┼ ─ ─ ─ ─ ─
+     │                        │                                  │                        │
+├ ─ ─├ ─ ─ ─ ─ ─ ─ ┼ ─ ─ ─ ─ ─                              ├ ─ ─├ ─ ─ ─ ─ ─ ─ ┼ ─ ─ ─ ─ ─
+     │                        │                                  │                        │
+├────┼─────────────┼──────────┬────┬─────────────┬──────────┼────┼─────────────┼──────────┐
+│████│█████████████│██████████│████│█████████████│██████████│████│█████████████│██████████│
+├────┼─────────────┼──────────┼────┼─────────────┼──────────┼────┼─────────────┼──────────┤
+│████│█████████████│██████████│████│█████████████│██████████│████│█████████████│██████████│
+├────┼─────────────┼──────────┼────┼─────────────┼──────────┴────┴─────────────┴──────────┘
+     │                        │    │                        │
+├ ─ ─├ ─ ─ ─ ─ ─ ─ ┼ ─ ─ ─ ─ ─├ ─ ─├ ─ ─ ─ ─ ─ ─ ┼ ─ ─ ─ ─ ─
+     │                        │    │                        │
+└ ─ ─└ ─ ─ ─ ─ ─ ─ ┴ ─ ─ ─ ─ ─├ ─ ─├ ─ ─ ─ ─ ─ ─ ┼ ─ ─ ─ ─ ─
+                                   │                        │
+                              ├ ─ ─├ ─ ─ ─ ─ ─ ─ ┼ ─ ─ ─ ─ ─
+                                   │                        │
+                              ├ ─ ─├ ─ ─ ─ ─ ─ ─ ┼ ─ ─ ─ ─ ─
+                                   │                        │
+                              ├ ─ ─├ ─ ─ ─ ─ ─ ─ ┼ ─ ─ ─ ─ ─
+                                   │                        │
+                              └ ─ ─└ ─ ─ ─ ─ ─ ─ ┴ ─ ─ ─ ─ ─
+
+
+table thinking
+^^^^^^^^^^^^^^
+
+[{:id 1 :name "Ivan"}
+ {:id 2 :name "Huan"}
+ {:id 3 :name "Juan"}]
+
+
+| id | name |
+|----|------|
+| 1  | Ivan |
+| 2  | Huan |
+| 3  | Juan |
+
+
+blocks thinking
+
+
+noSQl
+
+- whatever: k->v, documents
+- id -> {...}
+- 2010s
+- mongodb, couchdb, cassandra
+- simpledb, dynamodb, opensearch
+- tarantool, ydb
+
+datalog (prolog subset)
+- datomic
+- xtdb
+
+good
+- easy to start (no schema)
+- easy API (get by id, get-by-this, CRUD)
+
+bad
+- no relations: user -> profile
+- no joins -> need joins
+- weak transactions
+- pitfalls
+
+
+couchdb: view cache
+cassandra: tombstone
+
+
+postgres: json, jsonb
+
+- documents
+- query and index them
+- subsets
+- search
+
+- transactions
+- join & relation
+- extensions, contrib
+
+
+SQL -> noSQL -> SQL
+
+
+JSON
+^^^^
+
+
+Переезд с OpenSearch -> Postgres
+- 30 сервисов
+- 100K..5M
+- DSL via HTTP/JSON
+
+
+
+# зачем json и документы?
+
 - разные типы
+- коллекции и вложенность
 - наращивание
-- модели и документы
--
+
 
 
 # примеры
@@ -34,29 +165,86 @@ PostgreSQL как эффективная база для документных 
 (images)
 
 
-# транзакции (PayPal, Apple)
+| sku   | property           | value     |
+|-------|--------------------|-----------|
+| 83453 | display.freq       | 60        |
+| 83453 | display.diag       | 15.5      |
+| 83453 | memory.freq        | 2666      |
+| 83453 | core.label         | Kaby Lake |
+| 83453 | display.freq       | 60        |
+| 83453 | bluetooth.support  | yes       |
+| 83453 | bluetooth.versions | [4, 5, 6] |
 
-- large
+                             ^^^^^^^^^^^^^
+
+
+
+| sku   | property           | value     |
+|-------|--------------------|-----------|
+| 83453 | display.freq       | 60        |
+| 83453 | display.diag       | 15.5      |
+| 83453 | memory.freq        | 2666      |
+| 83453 | core.label         | Kaby Lake |
+| 83453 | display.freq       | 60        |
+| 83453 | bluetooth.support  | true      |
+| 83453 | bluetooth.versions | [4, 5, 6] |
+
+                             ^^^^^^^^^^^^^
+
+ SKU      PROPS
+
+ 83453  {
+            display.freq  60
+            display.diag  15.5
+            memory.freq   2666
+            core.label    "Kaby Lake"
+            display.freq  60
+            bluetooth.support true
+            bluetooth.versions [4 5 6]
+        }
+
+ 23413  {
+            calories 523
+            box.width 25.3
+            box.height 52
+        }
+
+
+
+# транзакции (PayPal, Apple, Stripe)
+
+- very large!
 - s3?
 - reports
 
 
 # модели и стандарты
 
-- fhir
-- business
+- FHIR https://build.fhir.org/patient-example.json.html
+- business (models for frontend, backend)
 - legacy (mongo, open search)
 
 
 # антипримеры
 
-- data field
+- data jsonb -> dump
+- EntityA & EntityB
+
+
+┌────┬─────────────┬──────────┬──────────┬────────────────────────────────────────────────┐
+│ id │    type     │   name   │created-by│                  data (jsonb)                  │
+├────┼─────────────┼──────────┼──────────┼────────────────────────────────────────────────┤
+│ 1  │      A      │   foo    │   Ivan   │{:this "foo", items: [1, 2, 3]}                 │
+├────┼─────────────┼──────────┼──────────┼────────────────────────────────────────────────┤
+│ 1  │      B      │   bar    │   Petr   │{:state "inactive", "expires_in": 23423234234}  │
+└────┴─────────────┴──────────┴──────────┴────────────────────────────────────────────────┘
+
 
 
 # раньше
 
 
-JsonField (Django)
+JsonField (Django / Alchemy)
 
 ~~~python
 class JsonField(TextField)
@@ -74,24 +262,24 @@ user.save()
 ~~~
 
 
-# json vs jsonb
+# jsonb
+- выбирать подмножество
+- частично обновлять
+- индексировать
+- группировать
+- json -> SQL -> json
+- передача таблиц
 
-операторы
-модели
 
 
-# Переезд
 
-OpenSearch
-30 services
-
-# Почему
+# Почему перехали с OpenSearch
 
 1. дорогой
 ^^^^^^^^^^
-2. проекции
-3. sql
-4. протокол
+2. проекции (joins, tables)
+3. no SQL
+4. протокол (JSON vs binary wire)
 
 
 1. уже был postgres; pg $>   opensearch $<<<
@@ -100,6 +288,9 @@ OpenSearch
 entityA - get some-ids (1, 2, 3, 4, 5)
 entityB - get other-ids (10, 20, 30, 40, 50)
 entityC - get entities by ids (... .... ...)
+
+table thinking
+^^^^^^^^^^^^^^
 
 3. дайте людям SQL (рыба/удочка)
 
@@ -117,6 +308,7 @@ entityC - get entities by ids (... .... ...)
      {}]}}
 
 
+
 # Datomic
 
 - сложен в развертке (postgres, memcache, s3)
@@ -129,14 +321,14 @@ v1
  :good/sku 52342
  :good/title "Red cap"}
 
-:good/sku = :db.type/integer
+:good/sku = :db.type/Long
 
 v2
 {:good/id 99
  :good/sku "abc123x"
  :good/title "T-shirt"}
 
-:good/sku = :db.type/string
+:good/sku = :db.type/String
 
 
 # Why Postgres
@@ -144,8 +336,7 @@ v2
 - бесплатно
 - легкость в развертке
 - скорее всего уже есть
-- Postgres Pro
-- https://postgrespro.ru/education/books
+- Postgres Pro https://postgrespro.ru/education/books
 - документация
 - SQL
 
@@ -159,7 +350,7 @@ v2
 # Summary
 
 - no more "tables vs documents"
-- Jsonb Postgres
+- Postgres + Jsonb
 - index (btree, trigram, ts_vector)
 - complex search (no map/reduce)
 - reports
