@@ -99,6 +99,16 @@ good
 - easy to start (no schema)
 - easy API (get by id, get-by-this, CRUD)
 
+
+select * from users where id = 1
+db.getById('users', 1)
+
+update users set name = 'test', age = 30 where id = 1
+db.updateAttrs('users', 1, {:name 'test', :age 30})
+
+
+
+
 bad
 - no relations: user -> profile
 - no joins -> need joins
@@ -131,7 +141,7 @@ JSON
 
 Переезд с OpenSearch -> Postgres
 - 30 сервисов
-- 100K..5M
+- 100K .. 5M
 - DSL via HTTP/JSON
 
 
