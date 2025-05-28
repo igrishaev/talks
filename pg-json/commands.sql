@@ -332,9 +332,14 @@ select
     doc #>> '{requested-by,short-code}'
     as requester_code
 
-from docs
-order by (doc #>> '{inner-id}')::int desc
-limit 100;
+from
+    docs
+
+order by
+    (doc #>> '{inner-id}')::int desc
+
+limit
+    100;
 
 
  inner_id |  requester_name   | requester_code
@@ -377,10 +382,18 @@ limit 100;
 json @@ 'json path predicate'
 json @? 'json path with subquery'
 
--- ^^^ trobubles with JDBC
 
 
-doc @@ '$.reviewed.reviewers.id == "ivan@acme.com"'
+doc @@ '$.reviewed.reviewers.id == "ivan@acme.com"' -- lax
+
+-- lax vs strict
+
+doc @@ 'lax $.reviewed.reviewers.id == "ivan@acme.com"'
+
+doc @@ 'strict $.reviewed[*].reviewers[*].id == "ivan@acme.com"'
+
+-- doesn't work with nested arrays like [*][*]
+
 
 
 
@@ -399,13 +412,6 @@ where doc @@ '$.reviewed.reviewers.id == "ivan@acme.com"'
  Execution Time: 315.248 ms
 
 
--- lax vs strict
-
-doc @@ 'lax $.reviewed.reviewers.id == "ivan@acme.com"'
-
-doc @@ 'strict $.reviewed[*].reviewers[*].id == "ivan@acme.com"'
-
--- doesn't work with nested arrays like [*][*]
 
 
 
@@ -417,21 +423,22 @@ create index if not exists idx_doc_gin_jsonb_path
 
 btree: < <= = >= >
 
-$.reviewed[0].reviewers[0].id   ...
-$.reviewed[0].reviewers[0].name ...
-$.reviewed[0].reviewers[1].id   ...
-$.reviewed[0].reviewers[1].name ...
-$.reviewed[1].reviewers[0].id   ...
-$.reviewed[1].reviewers[0].name ...
-$.reviewed[1].reviewers[1].id   ...
-$.reviewed[2].reviewers[1].name ...
+$.reviewed.0.reviewers.0.id   ...
+$.reviewed.0.reviewers.0.name ...
+$.reviewed.0.reviewers.1.id   ...
+$.reviewed.0.reviewers.1.name ...
+$.reviewed.1.reviewers.0.id   ...
+$.reviewed.1.reviewers.0.name ...
+$.reviewed.1.reviewers.1.id   ...
+$.reviewed.2.reviewers.1.name ...
 
 
+-- heavy (large)
 -- subset
 
 
 create index if not exists idx_doc_gin_jsonb_path
-    on docs using gin (doc['subset'] jsonb_path_ops);
+    on docs using gin (doc['reviewed'] jsonb_path_ops);
 
 
 --
@@ -445,7 +452,8 @@ create index if not exists idx_doc_gin_jsonb_path
     role = 'agent'
 */
 
-
+select doc
+    from docs
 where
         doc @@ '$.reviewed.reviewers.id == "ivan@acme.com"'
     and doc @@ '$.reviewed.reviewers.role == "agent"'
@@ -469,7 +477,7 @@ $.reviewed[1].reviewers[1].role       -- accounter
 -- the same as OpenSearch
 
 
-@@ path exists
+@? path exists
 ^^^^^^^^^^^^^^
 
 
@@ -678,7 +686,7 @@ create index ... on docs
 ...
 
 where
-    (            coalesce(doc #>> '{client.name}', '')
+    (             coalesce(doc #>> '{client.name}', '')
         || ' ' || coalesce(doc #>> '{client.description}', '')
         || ' ' || coalesce(doc #>> '{client.department}', '')
 
@@ -735,7 +743,7 @@ where
 select
     sub.id,
     sub.score,
-    docs.doc['inner-id']
+    docs
 
 from (
 
@@ -952,10 +960,10 @@ limit 100;
 
                   id                  | amount | currency |  period
 --------------------------------------+--------+----------+----------
- 3558257a-7426-4c44-a2e9-9ea7e112a02e | 260581 | eur      | 8 years
- 3558257a-7426-4c44-a2e9-9ea7e112a02e | 140094 | eur      | 8 years
- 5ce2b724-61d5-4ce7-9661-5163f067376d | 137629 | usd      | 9 years
- 5ce2b724-61d5-4ce7-9661-5163f067376d | 231653 | eur      | 9 years
+ 3558257a-7426-4c44-a2e9-9ea7e112a02e | 260581 | eur      |  8 years
+ 3558257a-7426-4c44-a2e9-9ea7e112a02e | 140094 | eur      |  8 years
+ 5ce2b724-61d5-4ce7-9661-5163f067376d | 137629 | usd      |  9 years
+ 5ce2b724-61d5-4ce7-9661-5163f067376d | 231653 | eur      |  9 years
  12d4e215-ef56-4b1d-859e-9d438826e60b | 246181 | usd      | 10 years
  12d4e215-ef56-4b1d-859e-9d438826e60b | 132875 | lir      | 10 years
  bca04255-baca-4b07-b9e8-b4e1a00280a6 | 234387 | rub      | 11 years
@@ -978,8 +986,8 @@ select
 from
     docs,
     json_table(doc, '$' columns(
-        inner_id int path '$."inner-id"',
-        requested_id int path '$."requested-by".id',
+        inner_id             int  path '$."inner-id"',
+        requested_id         int  path '$."requested-by".id',
         requested_short_name text path '$."requested-by"."short-name"',
         requested_short_code text path '$."requested-by"."short-code"',
         nested path '$.reviewed[*]' columns (             -- nested
@@ -988,8 +996,8 @@ from
             dep_code text path '$.code',
             nested path '$.reviewers[*]' columns(         -- nested
                 review_id for ordinality,                 -- surrogate id
-                user_id text path '$.id',
-                role text path '$.role',
+                user_id     text path '$.id',
+                role text   path '$.role',
                 review text path '$.review',
                 review_date date path '$."created-at"'    -- date
             )
@@ -1022,7 +1030,7 @@ from
                 user_id text path '$.id',
                 role text path '$.role',
                 review text path '$.review',
-                review_date date path '$."created-at"' -- !!!
+                review_date date path '$."created-at"'
             )
         )
     )) as flatten;
@@ -1036,7 +1044,7 @@ select * from mv_docs_flatten;
 refresh materialized view mv_docs_flatten;
 
 
---- pg_cron !!!
+--- pg_cron !!! AWS
 
 
 select cron.schedule(

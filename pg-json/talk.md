@@ -64,32 +64,16 @@ table1                           join  table3                join  table3
                               └ ─ ─└ ─ ─ ─ ─ ─ ─ ┴ ─ ─ ─ ─ ─
 
 
-table thinking
-^^^^^^^^^^^^^^
-
-[{:id 1 :name "Ivan"}
- {:id 2 :name "Huan"}
- {:id 3 :name "Juan"}]
 
 
-| id | name |
-|----|------|
-| 1  | Ivan |
-| 2  | Huan |
-| 3  | Juan |
-
-
-blocks thinking
-
-
-noSQl
+noSQL
 
 - whatever: k->v, documents
 - id -> {...}
 - 2010s
 - mongodb, couchdb, cassandra
-- simpledb, dynamodb, opensearch
-- tarantool, ydb
+- AWS: simpledb -> dynamodb, elastic -> opensearch
+- tarantool, ydb (comp. with dynamodb)
 
 datalog (prolog subset)
 - datomic
@@ -109,8 +93,9 @@ db.updateAttrs('users', 1, {:name 'test', :age 30})
 
 
 
-bad
+good -> bad
 - no relations: user -> profile
+  - select users where profile.open_to_work
 - no joins -> need joins
 - weak transactions
 - pitfalls
@@ -121,6 +106,9 @@ cassandra: tombstone
 
 
 postgres: json, jsonb
+
+- use jsonb
+- json is a bare string
 
 - documents
 - query and index them
@@ -135,8 +123,8 @@ postgres: json, jsonb
 SQL -> noSQL -> SQL
 
 
-JSON
-^^^^
+
+
 
 
 Переезд с OpenSearch -> Postgres
@@ -157,7 +145,7 @@ JSON
 # примеры
 
 - характеристики товаров
-- транзакции (PayPal, Apple)
+- транзакции (PayPal, Apple, Stripe)
 - модели и стандарты
 
 
@@ -189,34 +177,22 @@ JSON
 
 
 
-| sku   | property           | value     |
-|-------|--------------------|-----------|
-| 83453 | display.freq       | 60        |
-| 83453 | display.diag       | 15.5      |
-| 83453 | memory.freq        | 2666      |
-| 83453 | core.label         | Kaby Lake |
-| 83453 | display.freq       | 60        |
-| 83453 | bluetooth.support  | true      |
-| 83453 | bluetooth.versions | [4, 5, 6] |
-
-                             ^^^^^^^^^^^^^
-
  SKU      PROPS
 
  83453  {
-            display.freq  60
-            display.diag  15.5
-            memory.freq   2666
-            core.label    "Kaby Lake"
-            display.freq  60
-            bluetooth.support true
+            display.freq       60
+            display.diag       15.5
+            memory.freq        2666
+            core.label         "Kaby Lake"
+            display.freq       60
+            bluetooth.support  true
             bluetooth.versions [4 5 6]
         }
 
  23413  {
-            calories 523
-            box.width 25.3
-            box.height 52
+            calories    523
+            box.width   25.3
+            box.height  52
         }
 
 
@@ -283,7 +259,7 @@ user.save()
 
 
 
-# Почему перехали с OpenSearch
+# Почему переехали с OpenSearch
 
 1. дорогой
 ^^^^^^^^^^
@@ -319,12 +295,9 @@ table thinking
 
 
 
-# Datomic
+# Версии документов и схема
 
-- сложен в развертке (postgres, memcache, s3)
-- требует схему
-- версии
-
+Datomic
 
 v1
 {:good/id 1
@@ -343,12 +316,12 @@ v2
 
 # Why Postgres
 
-- бесплатно
-- легкость в развертке
+- легкость в развертке (aws, neon.tech, supabase, ...)
 - скорее всего уже есть
 - Postgres Pro https://postgrespro.ru/education/books
 - документация
 - SQL
+
 
 
 
@@ -370,6 +343,9 @@ v2
 
 
 # Links
+
+Исходники
+https://github.com/igrishaev/talks/tree/gh-pages/pg-json
 
 Как наполнить базу сгенерированным JSON
 https://grishaev.me/json-sql/
