@@ -18,6 +18,89 @@ create table docs (
 
 
 
+
+/*
+
+cat sample.json | sed \
+    -e "s/\"/'/g" -e 's/: /, /g' \
+    -e 's/{/jsonb_build_object(/g' \
+    -e 's/}/\)/g' \
+    -e 's/\[/jsonb_build_array(/g' \
+    -e 's/\]/)/g'
+
+*/
+
+
+
+
+jsonb_build_object(
+  'id', 1,
+  'requested-at', jsonb_build_object(
+    'id', 61345,
+    'short-name', 'Mars Inc',
+    'short-code', 'mars-inc'
+  ),
+  'sum', jsonb_build_array(
+    jsonb_build_object(
+      'amount', 100000000,
+      'currency', 'usd',
+      'period', '10 years'
+    ),
+    jsonb_build_object(
+      'amount', 100000000,
+      'currency', 'eur',
+      'period', '15 years'
+    )
+  ),
+  'reviewed', jsonb_build_array(
+    jsonb_build_object(
+      'department', 'Some Dep A',
+      'code', 'dep-a',
+      'reviewers', jsonb_build_array(
+        jsonb_build_object(
+          'id', 'ivan@acme.com',
+          'role', 'manager',
+          'review', 'approve'
+        ),
+        jsonb_build_object(
+          'id', 'john@acme.com',
+          'role', 'analytic',
+          'review', 'reject'
+        )
+      )
+    ),
+    jsonb_build_object(
+      'department', 'Some Dep B',
+      'code', 'dep-b',
+      'reviewers', jsonb_build_array(
+        jsonb_build_object(
+          'id', 'marc@acme.com',
+          'role', 'manager',
+          'review', 'need-more-info'
+        ),
+        jsonb_build_object(
+          'id', 'ivan@acme.com',
+          'role', 'accounter',
+          'review', 'approve'
+        )
+      )
+    )
+  )
+)
+
+
+
+
+insert into
+    docs (id, doc)
+select
+    gen_random_uuid(),
+    jsonb_build_object(...)
+from
+    generate_series(1, 1000000) as x;
+
+
+
 --
 -- generate data
 --
