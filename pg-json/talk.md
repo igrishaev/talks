@@ -3,6 +3,21 @@
 PostgreSQL как документная база данных
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 SQL: tables & relations
 
 table -> ? -> table
@@ -66,18 +81,20 @@ table1                           join  table3                join  table3
 
 
 
+
+
+
 noSQL
 
 - whatever: k->v, documents
 - id -> {...}
 - 2010s
-- mongodb, couchdb, cassandra
+- mongodb (Node.js), couchdb (Erlang, map/reduce), cassandra (Java, replication)
 - AWS: simpledb -> dynamodb, elastic -> opensearch
 - tarantool, ydb (comp. with dynamodb)
 
-datalog (prolog subset)
-- datomic
-- xtdb
+sql -> noSQL
+
 
 good
 - easy to start (no schema)
@@ -101,23 +118,27 @@ good -> bad
 - pitfalls
 
 
-couchdb: view cache
-cassandra: tombstone
+
+cassandra: tombstone < 50K
+
+
+
+
 
 
 postgres: json, jsonb
 
-- use jsonb
-- json is a bare string
 
 - documents
 - query and index them
 - subsets
-- search
+- search (exact/ilike/fuzzy)
 
 - transactions
 - join & relation
 - extensions, contrib
+
+
 
 
 SQL -> noSQL -> SQL
@@ -127,27 +148,16 @@ SQL -> noSQL -> SQL
 
 
 
-Переезд с OpenSearch -> Postgres
-- 30 сервисов
-- 100K .. 5M
-- DSL via HTTP/JSON
-
-
 
 # зачем json и документы?
 
-- разные типы
+- разные типы {:name "Test" :age 45}
 - коллекции и вложенность
 - наращивание
 
 
 
 # примеры
-
-- характеристики товаров
-- транзакции (PayPal, Apple, Stripe)
-- модели и стандарты
-
 
 
 # характеристики товаров
@@ -170,14 +180,14 @@ SQL -> noSQL -> SQL
 | 83453 | memory.freq        | 2666      |
 | 83453 | core.label         | Kaby Lake |
 | 83453 | display.freq       | 60        |
-| 83453 | bluetooth.support  | yes       |
+| 83453 | bluetooth.support  | true      |
 | 83453 | bluetooth.versions | [4, 5, 6] |
 
                              ^^^^^^^^^^^^^
 
 
 
- SKU      PROPS
+ SKU      PROPS (jsonb)
 
  83453  {
             display.freq       60
@@ -248,6 +258,11 @@ user.save()
 ~~~
 
 
+- db: it's a string
+- no bulk updates
+
+
+
 # jsonb
 - выбирать подмножество
 - частично обновлять
@@ -258,33 +273,49 @@ user.save()
 
 
 
+Переезд с OpenSearch -> Postgres
+- 30 сервисов
+- 100K .. 5M
+- DSL via HTTP/JSON
+
+
+
 
 # Почему переехали с OpenSearch
 
 1. дорогой
 ^^^^^^^^^^
+уже был postgres; pg $>   opensearch $<<<
+
+
 2. проекции (joins, tables)
-3. no SQL
-4. протокол (JSON vs binary wire)
-
-
-1. уже был postgres; pg $>   opensearch $<<<
-2. разработчик выполняет роль базы
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 entityA - get some-ids (1, 2, 3, 4, 5)
 entityB - get other-ids (10, 20, 30, 40, 50)
 entityC - get entities by ids (... .... ...)
 
-table thinking
-^^^^^^^^^^^^^^
+разработчик выполняет роль базы
 
-3. дайте людям SQL (рыба/удочка)
 
-4. opensearch: HTTP REST JSON
+
+3. no SQL
+^^^^^^^^^^^^^^^
+дайте людям SQL (рыба/удочка)
+
+busines -> SQL (ok)
+busines -> mongo (not ok)
+
+
+
+4. JSON-протокол
+^^^^^^^^^^^^^^^^
+opensearch: HTTP REST JSON
 - фронтенд (нет)
 - max 10.000 записей
-- переполнение Integer/MAX_VALUE
+- переполнение ByteArrayOutputStream Integer/MAX_VALUE
 - JSON (нет ленивости)
+
 
 {result
   {entities
@@ -313,14 +344,38 @@ v2
 
 :good/sku = :db.type/String
 
+- migrate v1 -> v2
+- another name :good/sku-str or good/sku2
+
+
+postgres:
+- version
+- data
+
+
+(case version
+    1
+    (do-this model)
+
+    2
+    (do-that model)
+
+    ...default)
+
+
+
+
+
+
 
 # Why Postgres
 
 - легкость в развертке (aws, neon.tech, supabase, ...)
 - скорее всего уже есть
 - Postgres Pro https://postgrespro.ru/education/books
-- документация
-- SQL
+- документация (рус)
+- SQL (analytics)
+
 
 
 
